@@ -1,15 +1,20 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Main from './Main';
-import Footer from './Footer';
-import Header from './Header';
+import Login from './Login';
+import Registration from './Registration';
+import Profile from './Profile';
 
 function App() {
     return (
-        <>
-            <Header />
-            <Main />
-            <Footer />
-        </>
+        <BrowserRouter>
+            <Routes>
+                <Route path="*" element={<Main />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/registration" element={<Registration />} />
+                <Route path="/profile" element={<Profile />} />
+            </Routes>
+        </BrowserRouter>
     );
 }
 

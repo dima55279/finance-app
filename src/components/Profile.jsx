@@ -2,19 +2,17 @@ import React from 'react';
 import Header from './Header';
 import Footer from './Footer';
 
-function Main() {
+function Profile() {
 
     return (
         <>
         <Header />
-        <main className="main">
-            <div>
-                <p>Placeholder</p>
-            </div>
-        </main>
+        <div>
+            <p>Profile Placeholder</p>
+        </div>
         <Footer />
         </>
     );
 }
 
-export default Main;
+export default Profile;

@@ -1,0 +1,9 @@
+.login__form__input {
+    padding: 18px;
+    margin: 0;
+    width: 100%;
+    border: 3px solid;
+    border-radius: 12px;
+    font-size: 30px;
+    font-weight: 600;
+}

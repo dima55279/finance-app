@@ -6,3 +6,13 @@
 @import url(./blocks/header/__logo/header__logo.css);
 @import url(./blocks/footer/footer.css);
 @import url(./blocks/footer/__text/footer__text.css);
+@import url(./blocks/login/login.css);
+@import url(./blocks/login/__form/login__form.css);
+@import url(./blocks/login/__form/__input/login__form__input.css);
+@import url(./blocks/login/__form/__submit/login__form__submit.css);
+@import url(./blocks/login/__heading/login__heading.css);
+@import url(./blocks/registration/registration.css);
+@import url(./blocks/registration/__form/registration__form.css);
+@import url(./blocks/registration/__form/__input/registration__form__input.css);
+@import url(./blocks/registration/__form/__submit/registration__form__submit.css);
+@import url(./blocks/registration/__heading/registration__heading.css);
