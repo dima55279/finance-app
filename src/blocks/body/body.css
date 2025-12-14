@@ -1,0 +1,17 @@
+body {
+  font-family: Oswald, Arial, sans-serif;
+  color: white;
+  font-size: 30px;
+  font-weight: 750;
+  background-color: black;
+  box-sizing: border-box;
+  max-width: 880px;
+  margin: auto;
+}
+
+@media screen and (max-width: 1279px) {
+  .body {
+    max-width: 880px;
+  }
+
+}
