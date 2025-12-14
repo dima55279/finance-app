@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 
@@ -20,6 +21,10 @@ function Login() {
                 </label>
                 <input type="submit" value="Войти" className="login__form__submit"/>
             </form>
+            <div className="login__question-block">
+                <p>Ещё нет профиля?</p>
+                <Link to="/registration" className="login__question-btn">Зарегистрироваться</Link>
+            </div>
         </div>
         <Footer />
         </>

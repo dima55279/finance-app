@@ -1,0 +1,5 @@
+.header__buttons-div {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
