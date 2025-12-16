@@ -1,9 +1,21 @@
 import React from 'react';
+import { useState } from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import AddCategoryPopup from './AddCategoryPopup';
 import icon from '../images/userIcon.png'
 
 function Profile() {
+
+    const [isAddCategoryPopupOpen, setIsAddCategoryPopupOpen] = useState(false);
+
+    function handleAddCategoryPopupClick() {
+        setIsAddCategoryPopupOpen(true);
+    }
+
+    function closeAddCategoryPopup() {
+        setIsAddCategoryPopupOpen(false);
+    }
 
     return (
         <>
@@ -17,7 +29,14 @@ function Profile() {
             <p>Имя:</p>
             <p>Фамилия:</p>
             <p>Лимит бюджета:</p>
-            <p>Категории расходов:</p>
+            <div>
+                <p>Категории доходов и расходов:</p>
+                <div className="profile__add-category">
+                    <p>Добавить категорию</p>
+                    <button className="profile__add-category__button" type="button" aria-label="открыть" onClick={handleAddCategoryPopupClick}></button>
+                </div>
+                <AddCategoryPopup isOpen={isAddCategoryPopupOpen} onClose={closeAddCategoryPopup}/>
+            </div>
         </div>
         <Footer />
         </>

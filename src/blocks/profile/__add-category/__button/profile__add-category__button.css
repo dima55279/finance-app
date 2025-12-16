@@ -1,0 +1,24 @@
+.profile__add-category__button {
+    background: url(../../../../images/pencil.png);
+    background-position: center;
+    background-size: contain;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background-color: white;
+}
+
+.profile__add-category__button:hover {
+  opacity: 60%;
+  cursor: pointer;
+}
+
+@media screen and (max-width: 767px) {
+  .profile__add-category__button {
+    width: 20px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+}

@@ -24,3 +24,11 @@
 @import url(./blocks/registration/__question-btn/registration__question-btn.css);
 @import url(./blocks/profile/profile.css);
 @import url(./blocks/profile/__icon/profile__icon.css);
+@import url(./blocks/profile/__add-category/profile__add-category.css);
+@import url(./blocks/profile/__add-category/__button/profile__add-category__button.css);
+@import url(./blocks/category-popup/category-popup.css);
+@import url(./blocks/category-popup/__open/category-popup__open.css);
+@import url(./blocks/category-popup/__close-btn/category-popup__close-btn.css);
+@import url(./blocks/category-popup/__input-div/category-popup__input-div.css);
+@import url(./blocks/category-popup/__input-category/category-popup__input-category.css);
+@import url(./blocks/category-popup/__save-category-btn/category-popup__save-category-btn.css);

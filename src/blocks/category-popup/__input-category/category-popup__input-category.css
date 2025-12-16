@@ -1,0 +1,9 @@
+.category-popup__input-category {
+    padding: 18px;
+    margin: 0;
+    width: 95%;
+    border: 3px solid;
+    border-radius: 12px;
+    font-size: 30px;
+    font-weight: 600;
+}
