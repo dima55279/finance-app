@@ -3,7 +3,7 @@ import { ColorPicker, useColor } from 'react-color-palette';
 import 'react-color-palette/css'
 
 function AddCategoryPopup (props) {
-    const { isOpen, onClose } = props;
+    const { isOpen, onClose, userId } = props;
     const [color, setColor] = useColor("#561ecb");
     const onChangeComplete = (color) => {
         localStorage.setItem("userColor", color.hex);
