@@ -11,6 +11,7 @@ const usersSlice = createSlice({
     addUser: usersAdapter.addOne,
     addUsers: usersAdapter.addMany,
     removeUser: usersAdapter.removeOne,
+    updateUser: usersAdapter.updateOne
   },
 });
 

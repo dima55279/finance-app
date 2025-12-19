@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { actions as usersActions } from "./usersSlice.js";
 
 const authSlice = createSlice({
   name: "auth",
@@ -42,7 +43,25 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload;
     },
+    updateCurrentUser: (state, action) => {
+      if (state.currentUser) {
+        state.currentUser = { ...state.currentUser, ...action.payload };
+      }
+    },
+    updateBudget: (state, action) => {
+      if (state.currentUser) {
+        state.currentUser.budgetLimit = action.payload;
+      }
+    },
   },
+  extraReducers: (builder) => {
+    builder.addCase(usersActions.updateUser, (state, action) => {
+      const { id, changes } = action.payload;
+      if (state.currentUser && state.currentUser.id === id) {
+        state.currentUser = { ...state.currentUser, ...changes };
+      }
+    });
+  }
 });
 
 export const { actions } = authSlice;

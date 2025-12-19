@@ -9,9 +9,9 @@ function AddCategoryPopup (props) {
         localStorage.setItem("userColor", color.hex);
     };
     return (
-        <div className={`colorPicker ${isOpen ? 'colorPicker__open' : ''}`}>
+        <div className={`category-popup ${isOpen ? 'category-popup__open' : ''}`}>
             <div>
-                <button className="colorPicker__close-btn" type="button" aria-label="закрыть" onClick={onClose}></button>
+                <button className="category-popup__close-btn" type="button" aria-label="закрыть" onClick={onClose}></button>
                 <p>Выберите цвет для категории:</p>
                 <ColorPicker hideInput={["rgb", "hsv"]} color={color} onChange={setColor} onChangeComplete={onChangeComplete}/>
                 <div className="category-popup__input-div">

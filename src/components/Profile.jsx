@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import AddCategoryPopup from './AddCategoryPopup';
+import BudgetLimitPopup from './BudgetLimitPopup';
 import { actions as authActions } from '../slices/authSlice';
 import icon from '../images/userIcon.png'
 
@@ -14,6 +15,7 @@ function Profile() {
     const navigate = useNavigate();
     
     const [isAddCategoryPopupOpen, setIsAddCategoryPopupOpen] = useState(false);
+    const [isBudgetLimitPopupOpen, setIsBudgetLimitPopupOpen] = useState(false);
     
     const currentUser = useSelector(state => state.auth.currentUser);
     const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
@@ -41,6 +43,14 @@ function Profile() {
         setIsAddCategoryPopupOpen(false);
     }
 
+    function handleBudgetLimitPopupClick() {
+        setIsBudgetLimitPopupOpen(true);
+    }
+
+    function closeBudgetLimitPopup() {
+        setIsBudgetLimitPopupOpen(false);
+    }
+
     return (
         <>
         <Header />
@@ -52,12 +62,27 @@ function Profile() {
             </div>
             <p>Имя: {currentUser.name} </p>
             <p>Фамилия: {currentUser.surname} </p>
-            <p>Лимит бюджета: {currentUser.budgetLimit || 0} рублей</p>
+            <div>
+                <p>Лимит бюджета на месяц: {currentUser.budgetLimit || 0} руб.</p>
+                <div className="profile__add-block">
+                    <p>Изменить бюджет</p>
+                    <button className="profile__change-btn" type="button" aria-label="открыть" onClick={handleBudgetLimitPopupClick}></button>
+                </div>
+                <BudgetLimitPopup isOpen={isBudgetLimitPopupOpen} onClose={closeBudgetLimitPopup} userId={currentUser.id}/>
+            </div>
             <div>
                 <p>Категории доходов и расходов:</p>
-                <div className="profile__add-category">
-                    <p>Добавить категорию</p>
-                    <button className="profile__add-category__button" type="button" aria-label="открыть" onClick={handleAddCategoryPopupClick}></button>
+                <div className="profile__add-block">
+                    <p>Изменить список категорий</p>
+                    <button className="profile__change-btn" type="button" aria-label="открыть" onClick={handleAddCategoryPopupClick}></button>
+                </div>
+                <AddCategoryPopup isOpen={isAddCategoryPopupOpen} onClose={closeAddCategoryPopup} userId={currentUser.id}/>
+            </div>
+            <div>
+                <p>Последние операции:</p>
+                <div className="profile__add-block">
+                    <p>Изменить добавленные операции</p>
+                    <button className="profile__change-btn" type="button" aria-label="открыть" onClick={handleAddCategoryPopupClick}></button>
                 </div>
                 <AddCategoryPopup isOpen={isAddCategoryPopupOpen} onClose={closeAddCategoryPopup} userId={currentUser.id}/>
             </div>

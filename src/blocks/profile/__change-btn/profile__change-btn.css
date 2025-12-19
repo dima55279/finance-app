@@ -1,5 +1,5 @@
-.profile__add-category__button {
-    background: url(../../../../images/pencil.png);
+.profile__change-btn {
+    background: url(../../../images/pencil.png);
     background-position: center;
     background-size: contain;
     border-radius: 50%;
@@ -9,13 +9,13 @@
     background-color: white;
 }
 
-.profile__add-category__button:hover {
+.profile__change-btn:hover {
   opacity: 60%;
   cursor: pointer;
 }
 
 @media screen and (max-width: 767px) {
-  .profile__add-category__button {
+  .profile__change-btn {
     width: 20px;
     height: 20px;
     background-size: contain;
