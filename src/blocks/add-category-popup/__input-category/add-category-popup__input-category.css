@@ -1,7 +1,7 @@
-.category-popup__input-category {
+.add-category-popup__input-category {
     padding: 18px;
-    margin: 0;
-    width: 95%;
+    margin-top: 5px;
+    width: 97%;
     border: 3px solid;
     border-radius: 12px;
     font-size: 30px;

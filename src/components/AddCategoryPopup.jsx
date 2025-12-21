@@ -1,26 +1,73 @@
 import React from 'react';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { ColorPicker, useColor } from 'react-color-palette';
+import { actions as categoriesActions } from '../slices/categoriesSlice.js';
+import _ from 'lodash';
 import 'react-color-palette/css'
 
 function AddCategoryPopup (props) {
     const { isOpen, onClose, userId } = props;
     const [color, setColor] = useColor("#561ecb");
-    const onChangeComplete = (color) => {
-        localStorage.setItem("userColor", color.hex);
+    const [categoryName, setCategoryName] = useState('');
+    const [categoryType, setCategoryType] = useState('expense');
+    const dispatch = useDispatch();
+
+    const handleSaveCategory = () => {
+        if (!categoryName.trim()) {
+            alert('Введите название категории.');
+            return;
+        }
+
+        const newCategory = {
+            id: _.uniqueId(),
+            name: categoryName,
+            color: color.hex,
+            type: categoryType,
+            author: userId
+        };
+
+        dispatch(categoriesActions.addCategory(newCategory));
+        setCategoryName('');
+        setCategoryType('expense');
+        onClose();
     };
+
+    const handleChangeCategoryName = (e) => {
+        setCategoryName(e.target.value);
+    };
+
+    const handleChangeCategoryType = (e) => {
+        setCategoryType(e.target.value);
+    };
+
+    const handleClose = () => {
+        setCategoryName('');
+        setCategoryType('expense');
+        onClose();
+    };
+
     return (
-        <div className={`category-popup ${isOpen ? 'category-popup__open' : ''}`}>
+        <div className={`add-category-popup ${isOpen ? 'add-category-popup__open' : ''}`}>
             <div>
-                <button className="category-popup__close-btn" type="button" aria-label="закрыть" onClick={onClose}></button>
+                <button className="add-category-popup__close-btn" type="button" aria-label="закрыть" onClick={handleClose}></button>
                 <p>Выберите цвет для категории:</p>
-                <ColorPicker hideInput={["rgb", "hsv"]} color={color} onChange={setColor} onChangeComplete={onChangeComplete}/>
-                <div className="category-popup__input-div">
+                <ColorPicker hideInput={["rgb", "hsv"]} color={color} onChange={setColor}/>
+                <div className="add-category-popup__input-div">
                     <label>
                         Название категории:
-                        <input type="text" name="category" className="category-popup__input-category"/>
+                        <input type="text" name="category" className="add-category-popup__input-category" 
+                        value={categoryName} onChange={handleChangeCategoryName} placeholder="Введите название"/>
+                    </label>
+                    <label>
+                        Тип категории:
+                        <select className="add-category-popup__select-type" value={categoryType} onChange={handleChangeCategoryType}>
+                            <option className="add-category-popup__select-type" value="expense">Расход</option>
+                            <option className="add-category-popup__select-type" value="income">Доход</option>
+                        </select>
                     </label>
                 </div>
-                <button type="button" aria-label="сохранить" className="category-popup__save-category-btn">Сохранить</button>
+                <button type="button" aria-label="сохранить" className="add-category-popup__save-category-btn" onClick={handleSaveCategory}>Сохранить</button>
             </div>
         </div>
     );

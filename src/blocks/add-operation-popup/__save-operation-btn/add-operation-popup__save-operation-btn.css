@@ -1,0 +1,16 @@
+.add-operation-popup__save-operation-btn {
+    background-color: #FFFFFF;
+    color: black;
+    width: 33vw;
+    padding: 18px;
+    border: 3px solid black;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 100%;
+    margin-top: 20px;
+    margin-bottom: 30px;
+    margin-left: 34vw;
+    margin-right: 33vw;
+}

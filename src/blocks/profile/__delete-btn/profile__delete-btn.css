@@ -1,22 +1,22 @@
-.category-popup__close-btn {
-  width: 32px;
-  height: 32px;
+.profile__delete-btn {
+  width: 28px;
+  height: 28px;
   background-image: url(../../../images/cancel.png);
   border: none;
   border-radius: 50%;
   background-color: white;
   background-position: center;
   background-size: contain;
-  float: right;
+  margin-left: 10px;
 }
 
-.category-popup__close-btn:hover {
+.profile__delete-btn:hover {
   opacity: 60%;
   cursor: pointer;
 }
 
 @media screen and (max-width: 767px) {
-  .category-popup__close-btn {
+  .profile__delete-btn {
     width: 20px;
     height: 20px;
     background-size: contain;
