@@ -34,6 +34,9 @@
 @import url(./blocks/profile/__delete-btn/profile__delete-btn.css);
 @import url(./blocks/profile/__category/profile__category.css);
 @import url(./blocks/profile/__operation/profile__operation.css);
+@import url(./blocks/profile/__headers/profile__headers.css);
+@import url(./blocks/profile/__select-div/profile__select-div.css);
+@import url(./blocks/profile/__option/profile__option.css);
 @import url(./blocks/add-category-popup/add-category-popup.css);
 @import url(./blocks/add-category-popup/__open/add-category-popup__open.css);
 @import url(./blocks/add-category-popup/__close-btn/add-category-popup__close-btn.css);

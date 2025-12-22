@@ -1,0 +1,9 @@
+.profile__option {
+    padding: 18px;
+    margin-top: 5px;
+    width: 100%;
+    border: 3px solid;
+    border-radius: 12px;
+    font-size: 30px;
+    font-weight: 600;
+}
