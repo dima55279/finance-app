@@ -2,6 +2,9 @@
 @import url(./vendor/fonts/fonts.css);
 @import url(./blocks/body/body.css);
 @import url(./blocks/main/main.css);
+@import url(./blocks/main/__chart-select-div/main__chart-select-div.css);
+@import url(./blocks/main/__chart-option/main__chart-option.css);
+@import url(./blocks/main/__chart-div/main__chart-div.css);
 @import url(./blocks/header/header.css);
 @import url(./blocks/header/__logo/header__logo.css);
 @import url(./blocks/header/__buttons-div/header__buttons-div.css);
