@@ -11,7 +11,13 @@ const usersSlice = createSlice({
     addUser: usersAdapter.addOne,
     addUsers: usersAdapter.addMany,
     removeUser: usersAdapter.removeOne,
-    updateUser: usersAdapter.updateOne
+    updateUser: usersAdapter.updateOne,
+    updateUserAvatar: (state, action) => {
+      const { userId, avatar } = action.payload;
+      if (state.entities[userId]) {
+        state.entities[userId].avatar = avatar;
+      }
+    }
   },
 });
 

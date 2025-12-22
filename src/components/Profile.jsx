@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import UpdateAvatarPopup from './UpdateAvatarPopup';
 import BudgetLimitPopup from './BudgetLimitPopup';
 import AddCategoryPopup from './AddCategoryPopup';
 import AddOperationPopup from './AddOperationPopup';
@@ -17,6 +18,7 @@ function Profile() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     
+    const [isUpdateAvatarPopupOpen, setIsUpdateAvatarPopupOpen] = useState(false);
     const [isBudgetLimitPopupOpen, setIsBudgetLimitPopupOpen] = useState(false);
     const [isAddCategoryPopupOpen, setIsAddCategoryPopupOpen] = useState(false);
     const [isAddOperationPopupOpen, setIsAddOperationPopupOpen] = useState(false);
@@ -109,6 +111,14 @@ function Profile() {
         }).format(Math.abs(amount));
     };
 
+    function handleUpdateAvatarPopupClick() {
+        setIsUpdateAvatarPopupOpen(true);
+    }
+
+    function closeUpdateAvatarPopup() {
+        setIsUpdateAvatarPopupOpen(false);
+    }
+
     function handleBudgetLimitPopupClick() {
         setIsBudgetLimitPopupOpen(true);
     }
@@ -139,8 +149,13 @@ function Profile() {
         <div className="profile">
         <h1>Профиль пользователя</h1>
             <div>
-                <p>Аватарка:</p>
-                <img className="profile__icon" src={icon} alt="аватарка" />
+                <p>Фотография профиля:</p>
+                <img className="profile__icon" src={currentUser?.avatar || icon} alt="аватар" onError={(e) => { e.target.src = icon; }}/>
+                <div className="profile__add-block">
+                    <p>Изменить фотографию профиля</p>
+                    <button className="profile__change-btn" type="button" aria-label="открыть" onClick={handleUpdateAvatarPopupClick}></button>
+                </div>
+                <UpdateAvatarPopup isOpen={isUpdateAvatarPopupOpen} onClose={closeUpdateAvatarPopup} userId={currentUser.id}/>
             </div>
             <p>Имя: {currentUser.name} </p>
             <p>Фамилия: {currentUser.surname} </p>

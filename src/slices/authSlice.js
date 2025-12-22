@@ -15,7 +15,8 @@ const authSlice = createSlice({
       state.error = null;
     },
     loginSuccess: (state, action) => {
-      state.currentUser = action.payload;
+      const userData = action.payload;
+      state.currentUser = userData;
       state.isAuthenticated = true;
       state.loading = false;
       state.error = null;
@@ -34,7 +35,8 @@ const authSlice = createSlice({
       state.error = null;
     },
     registerSuccess: (state, action) => {
-      state.currentUser = action.payload;
+      const userData = action.payload;
+      state.currentUser = userData;
       state.isAuthenticated = true;
       state.loading = false;
       state.error = null;
@@ -51,6 +53,12 @@ const authSlice = createSlice({
     updateBudget: (state, action) => {
       if (state.currentUser) {
         state.currentUser.budgetLimit = action.payload;
+      }
+    },
+
+    updateAvatar: (state, action) => {
+      if (state.currentUser) {
+        state.currentUser.avatar = action.payload;
       }
     },
   },

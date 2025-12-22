@@ -1,0 +1,11 @@
+.avatar-popup__input-avatar {
+    padding: 18px;
+    margin: 0;
+    width: 95%;
+    border: 3px solid;
+    border-radius: 12px;
+    font-size: 30px;
+    font-weight: 600;
+    background-color: white;
+    color: #000;
+}

@@ -1,14 +1,16 @@
 .profile__icon {
-  max-width: 142px;
-  margin: 0 0 41px 0;
+  width: 200px;
+  height: 200px;
   background-color: #ffffff;  
   border-radius: 50%;
-  overflow: hidden;
+  object-fit: cover;
 }
 
 @media screen and (max-width: 767px) {
   .profile__icon {
     max-width: 103px;
-    margin: 0 0 31px 0;
+    max-height: 103px;
+    border-radius: 50%;
+    object-fit: cover;
   }
 }

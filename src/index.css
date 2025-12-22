@@ -51,3 +51,11 @@
 @import url(./blocks/add-operation-popup/__input-div/add-operation-popup__input-div.css);
 @import url(./blocks/add-operation-popup/__input-operation/add-operation-popup__input-operation.css);
 @import url(./blocks/add-operation-popup/__save-operation-btn/add-operation-popup__save-operation-btn.css);
+@import url(./blocks/avatar-popup/avatar-popup.css);
+@import url(./blocks/avatar-popup/__open/avatar-popup__open.css);
+@import url(./blocks/avatar-popup/__close-btn/avatar-popup__close-btn.css);
+@import url(./blocks/avatar-popup/__input-div/avatar-popup__input-div.css);
+@import url(./blocks/avatar-popup/__input-avatar/avatar-popup__input-avatar.css);
+@import url(./blocks/avatar-popup/__save-avatar-btn/avatar-popup__save-avatar-btn.css);
+@import url(./blocks/avatar-popup/__cancel-avatar-btn/avatar-popup__cancel-avatar-btn.css);
+@import url(./blocks/avatar-popup/__preview/avatar-popup__preview.css);
