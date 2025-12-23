@@ -1,7 +1,7 @@
 import React from "react";
 import { Line } from "react-chartjs-2";
 
-const data = {
+const defaultData = {
   labels: ["Jan", "Feb", "Mar", "Apr", "May"],
   datasets: [
     {
@@ -28,7 +28,7 @@ const data = {
   ],
 };
 
-const options = {
+const defaultOptions = {
   scales: {
     x: {
       display: true,
@@ -47,7 +47,7 @@ const options = {
   },
 };
 
-const LineChart = () => {
+const LineChart = ({ data = defaultData, options = defaultOptions }) => {
   return (
     <div>
       <Line data={data} options={options} />

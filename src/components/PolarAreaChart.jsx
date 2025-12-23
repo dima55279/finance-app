@@ -1,6 +1,6 @@
 import { PolarArea } from "react-chartjs-2";
 
-const data = {
+const defaultData = {
   labels: ["A", "B", "C", "D", "E"],
   datasets: [
     {
@@ -10,10 +10,10 @@ const data = {
   ],
 };
 
-const PolarAreaChart = () => {
+const PolarAreaChart = ({ data = defaultData, options = {} }) => {
   return (
     <div>
-      <PolarArea data={data} />
+      <PolarArea data={data} options={options} />
     </div>
   );
 };

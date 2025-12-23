@@ -1,7 +1,7 @@
 import React from "react";
 import { Bar } from "react-chartjs-2";
 
-const data = {
+const defaultData = {
   labels: [
     "Category A",
     "Category B",
@@ -23,10 +23,10 @@ const data = {
   ],
 };
 
-const BarChart = () => {
+const BarChart = ({ data = defaultData, options = {} }) => {
   return (
     <div>
-      <Bar data={data} />
+      <Bar data={data} options={options} />
     </div>
   );
 };

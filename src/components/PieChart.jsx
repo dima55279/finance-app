@@ -1,6 +1,6 @@
 import { Pie } from "react-chartjs-2";
 
-const data = {
+const defaultData = {
   labels: ["Chrome", "Firefox", "Safari", "Edge", "Others"],
   datasets: [
     {
@@ -10,10 +10,10 @@ const data = {
   ],
 };
 
-const PieChart = () => {
+const PieChart = ({ data = defaultData, options = {} }) => {
   return (
     <div>
-      <Pie data={data} />
+      <Pie data={data} options={options} />
     </div>
   );
 };
