@@ -1,10 +1,10 @@
-// Registration.jsx
 import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import Loader from './Loader';
 import { useRegisterMutation } from '../slices/api/usersApi';
 
 function Registration() {
@@ -75,6 +75,7 @@ function Registration() {
     <>
       <Header />
       <div className="registration">
+        {(registerLoading || isSubmitting) && <Loader />}
         <h1 className="registration__heading">Регистрация</h1>
         <form className="registration__form" onSubmit={handleSubmit}>
           <label>

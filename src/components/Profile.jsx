@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import Loader from './Loader';
 import UpdateAvatarPopup from './UpdateAvatarPopup';
 import BudgetLimitPopup from './BudgetLimitPopup';
 import AddCategoryPopup from './AddCategoryPopup';
@@ -31,18 +32,18 @@ function Profile() {
   const { data: currentUser, isLoading: userLoading, error: userError } = useGetCurrentUserQuery(undefined, {
     skip: !token
   });
-  const [logoutMutation] = useLogoutMutation();
+  const [logoutMutation, { isLoading: logoutLoading }] = useLogoutMutation();
 
   const { data: categoriesData = [], isLoading: categoriesLoading } = useGetCategoriesByUserQuery(undefined, {
     skip: !token
   });
 
-  const [removeCategory] = useRemoveCategoryMutation();
+  const [removeCategory, { isLoading: removeCategoryLoading }] = useRemoveCategoryMutation();
 
   const { data: operationsData = [], isLoading: operationsLoading } = useGetOperationsByUserQuery(undefined, {
     skip: !token
   });
-  const [removeOperation] = useRemoveOperationMutation();
+  const [removeOperation, { isLoading: removeOperationLoading }] = useRemoveOperationMutation();
 
   useEffect(() => {
     if (userError && userError.status === 401) {
@@ -169,12 +170,15 @@ function Profile() {
     return stats;
   }, [filteredOperations, userCategories]);
 
-  if (userLoading || categoriesLoading || operationsLoading) {
+  const isLoading = userLoading || categoriesLoading || operationsLoading;
+
+  if (isLoading) {
     return (
         <>
             <Header />
             <div className="profile">
-                <h1>Загрузка профиля...</h1>
+                <h1 className="profile__headers">Вход в профиль...</h1>
+                <Loader />
             </div>
             <Footer />
         </>
@@ -186,7 +190,7 @@ function Profile() {
         <>
             <Header />
             <div className="profile">
-                <h1>Не удалось загрузить профиль</h1>
+                <h1 className="profile__headers">Не удалось загрузить профиль.</h1>
                 <button onClick={() => window.location.reload()}>Повторить</button>
             </div>
             <Footer />
@@ -313,6 +317,8 @@ function Profile() {
     <>
       <Header />
       <div className="profile">
+        {(logoutLoading || removeCategoryLoading || removeOperationLoading) && <Loader />}
+        
         <div>
           <h1 className="profile__headers">Профиль пользователя</h1>
           <p>Фотография профиля:</p>
@@ -347,8 +353,8 @@ function Profile() {
                       <span>{category.name}</span>
                       <span style={{ backgroundColor: category.color, color: category.color, marginLeft: '10px',
                         borderColor: category.color, width: '20px', height: '20px', borderRadius: '50%' }}>00</span>
-                      <button type="button" className="profile__delete-btn" 
-                      onClick={() => handleDeleteCategory(category.id)} aria-label="удалить категорию"></button>
+                      <button type="button" className="profile__delete-btn" onClick={() => handleDeleteCategory(category.id)} 
+                        aria-label="удалить категорию" disabled={removeCategoryLoading}></button>
                     </div>
                   ))}
                 
@@ -360,8 +366,8 @@ function Profile() {
                       <span>{category.name}</span>
                       <span style={{ backgroundColor: category.color, color: category.color, marginLeft: '10px',
                         borderColor: category.color, width: '20px', height: '20px', borderRadius: '50%' }}>00</span>
-                      <button type="button" className="profile__delete-btn" 
-                      onClick={() => handleDeleteCategory(category.id)} aria-label="удалить категорию"></button>
+                      <button type="button" className="profile__delete-btn" onClick={() => handleDeleteCategory(category.id)} 
+                        aria-label="удалить категорию" disabled={removeCategoryLoading}></button>
                     </div>
                   ))}
               </div>
@@ -487,8 +493,8 @@ function Profile() {
                                       <span>
                                           {isIncome ? ' +' : ' -'}{formatAmount(operation.amount)} руб.
                                       </span>
-                                      <button type="button" className="profile__delete-btn" 
-                                        onClick={() => handleDeleteOperation(operation.id)} aria-label="удалить операцию"></button>
+                                      <button type="button" className="profile__delete-btn" onClick={() => handleDeleteOperation(operation.id)} 
+                                        aria-label="удалить операцию" disabled={removeOperationLoading}></button>
                                   </div>
                               </div>
                           </div>

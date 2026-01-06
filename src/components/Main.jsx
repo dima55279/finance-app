@@ -2,6 +2,7 @@ import React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import Header from './Header';
 import Footer from './Footer';
+import Loader from './Loader';
 import LineChart from './LineChart';
 import BarChart from './BarChart';
 import PieChart from './PieChart';
@@ -484,7 +485,6 @@ function Main() {
             }
         }
 
-        // Фолбэк
         return <LineChart />;
     };
     
@@ -492,7 +492,9 @@ function Main() {
         <>
         <Header />
         <main className="main">
-            {(!token || userLoading) && (
+            {isLoading && <Loader />}
+            
+            {(!token || userLoading) && !isLoading && (
                 <div>
                     <div>
                         <h1>Веб-приложение для управления бюджетом</h1>
@@ -528,7 +530,7 @@ function Main() {
                 </div>
             )}
             
-            {token && !userLoading && currentUser && (
+            {token && !userLoading && currentUser && !isLoading && (
                 <div>
                     <h1>Аналитика ваших операций</h1>
                     <p>

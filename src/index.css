@@ -65,3 +65,4 @@
 @import url(./blocks/avatar-popup/__save-avatar-btn/avatar-popup__save-avatar-btn.css);
 @import url(./blocks/avatar-popup/__cancel-avatar-btn/avatar-popup__cancel-avatar-btn.css);
 @import url(./blocks/avatar-popup/__preview/avatar-popup__preview.css);
+@import url(./blocks/loader/loader.css);

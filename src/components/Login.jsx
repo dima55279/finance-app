@@ -1,10 +1,10 @@
-// Login.jsx
 import React from 'react';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import { useLoginMutation } from '../slices/api/usersApi'; // УБРАТЬ useGetCurrentUserQuery
+import Loader from './Loader';
+import { useLoginMutation } from '../slices/api/usersApi';
 
 function Login() {
     const navigate = useNavigate();
@@ -55,42 +55,24 @@ function Login() {
         <>
         <Header />
         <div className="login">
+            {(authLoading || isSubmitting) && <Loader />}
             <h1 className="login__heading">Вход в профиль</h1>
             <form className="login__form" onSubmit={handleSubmit}>
                 <label>
                     Электронная почта:
-                    <input 
-                        type="email" 
-                        name="email" 
-                        className="login__form__input" 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        required
-                        disabled={authLoading || isSubmitting}
-                    />
+                    <input type="email" name="email" className="login__form__input" value={email} 
+                        onChange={(e) => setEmail(e.target.value)} required disabled={authLoading || isSubmitting}/>
                 </label>
                 {errors.email && <div className="login__error">{errors.email}</div>}
                 <label>
                     Пароль:
-                    <input 
-                        type="password" 
-                        name="password" 
-                        className="login__form__input" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        required
-                        disabled={authLoading || isSubmitting}
-                    />
+                    <input type="password" name="password" className="login__form__input" value={password} 
+                        onChange={(e) => setPassword(e.target.value)} required disabled={authLoading || isSubmitting}/>
                 </label>
                 {errors.password && <span className="login__error">{errors.password}</span>}
                 {errors.general && <div className="login__error">{errors.general}</div>}
-                <input 
-                    type="submit" 
-                    value={authLoading || isSubmitting ? "Вход..." : "Войти"} 
-                    className="login__form__submit"
-                    disabled={authLoading || isSubmitting}
-                    formNoValidate
-                />
+                <input type="submit" value={authLoading || isSubmitting ? "Вход..." : "Войти"} className="login__form__submit"
+                    disabled={authLoading || isSubmitting} formNoValidate/>
             </form>
             <div className="login__question-block">
                 <p>Ещё нет профиля?</p>
