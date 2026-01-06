@@ -1,11 +1,11 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { useUpdateUserMutation } from '../slices/api/usersApi';
+import { useUpdateUserBudgetMutation } from '../slices/api/usersApi';
 
 function BudgetLimitPopup (props) {
     const { isOpen, onClose, userId } = props;
 
-    const [updateUser] = useUpdateUserMutation();
+    const [updateUserBudget] = useUpdateUserBudgetMutation();
     
     const [budget, setBudget] = useState('');
     const [error, setError] = useState('');
@@ -36,9 +36,9 @@ function BudgetLimitPopup (props) {
         }
 
         try {
-            await updateUser({
-                id: userId,
-                changes: { budgetLimit: budgetValue }
+            await updateUserBudget({
+                userId: userId,
+                budgetLimit: budgetValue
             }).unwrap();
 
             onClose();

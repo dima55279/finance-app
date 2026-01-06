@@ -39,11 +39,11 @@ function Profile() {
   const [removeOperation] = useRemoveOperationMutation();
 
   const userCategories = useMemo(() => {
-    return categoriesData;
+    return [...categoriesData];
   }, [categoriesData]);
 
   const userOperations = useMemo(() => {
-    return operationsData.sort((a, b) => new Date(b.date) - new Date(a.date));
+    return [...operationsData].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [operationsData]);
 
   const filteredOperations = useMemo(() => {
@@ -105,8 +105,8 @@ function Profile() {
 
   const availableYears = useMemo(() => {
     const years = userOperations.map(op => new Date(op.date).getFullYear());
-    const uniqueYears = [...new Set(years)].sort((a, b) => b - a);
-    return uniqueYears;
+    const uniqueYears = [...new Set(years)];
+    return [...uniqueYears].sort((a, b) => b - a);
   }, [userOperations]);
 
   const { totalIncome, totalExpense } = useMemo(() => {

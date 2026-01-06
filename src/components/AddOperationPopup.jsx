@@ -43,7 +43,7 @@ function AddOperationPopup (props) {
             name: operationData.name,
             date: operationData.date,
             amount: parseFloat(operationData.amount),
-            categoryId: operationData.categoryId,
+            categoryId: operationData.categoryId ? parseInt(operationData.categoryId) : null,
             author: userId,
         };
 

@@ -32,19 +32,20 @@ function Main() {
     });
 
     const userCategories = useMemo(() => {
-        return categoriesData;
+        return [...categoriesData];
     }, [categoriesData]);
 
     const userOperations = useMemo(() => {
-        return operationsData.sort((a, b) => new Date(b.date) - new Date(a.date));
+        return [...operationsData].sort((a, b) => new Date(b.date) - new Date(a.date));
     }, [operationsData]);
 
     const filteredOperations = useMemo(() => {
         let filtered = userOperations;
 
         if (selectedCategoryFilter !== 'all') {
+            const categoryId = parseInt(selectedCategoryFilter);
             filtered = filtered.filter(operation => 
-                operation.categoryId === selectedCategoryFilter
+                operation.categoryId === categoryId
             );
         }
 
@@ -112,7 +113,7 @@ function Main() {
     }, []);
 
     const prepareChartData = (chartType, dataType) => {
-        if (filteredOperations.length === 0) {
+        if (filteredOperations.length === 0 || userCategories.length === 0) {
             return getEmptyChartData(chartType, dataType);
         }
         
@@ -141,9 +142,9 @@ function Main() {
             
             const category = userCategories.find(c => c.id === op.categoryId);
             if (category) {
-                if (category.type === 'income') {
+                if (category.category_type === 'income') {
                     operationsByDate[date].income += Math.abs(op.amount);
-                } else if (category.type === 'expense') {
+                } else if (category.category_type === 'expense') {
                     operationsByDate[date].expense += Math.abs(op.amount);
                 }
             }
@@ -188,81 +189,117 @@ function Main() {
     };
 
     const prepareBarChartData = (dataType) => {
-        const incomeByCategory = {};
-        const expenseByCategory = {};
+        const categoryStats = {};
+        
+        userCategories.forEach(category => {
+            categoryStats[category.id] = {
+                name: category.name,
+                income: 0,
+                expense: 0,
+                color: category.color
+            };
+        });
         
         filteredOperations.forEach(op => {
             const category = userCategories.find(c => c.id === op.categoryId);
             if (category) {
-                if (category.type === 'income') {
-                    if (!incomeByCategory[category.name]) {
-                        incomeByCategory[category.name] = 0;
-                    }
-                    incomeByCategory[category.name] += Math.abs(op.amount);
-                } else if (category.type === 'expense') {
-                    if (!expenseByCategory[category.name]) {
-                        expenseByCategory[category.name] = 0;
-                    }
-                    expenseByCategory[category.name] += Math.abs(op.amount);
+                if (category.category_type === 'income') {
+                    categoryStats[category.id].income += Math.abs(op.amount);
+                } else if (category.category_type === 'expense') {
+                    categoryStats[category.id].expense += Math.abs(op.amount);
                 }
             }
         });
         
-        let allCategoryNames = [];
+        const incomeCategories = Object.values(categoryStats)
+            .filter(stat => stat.income > 0)
+            .sort((a, b) => b.income - a.income);
         
-        if (dataType === 'all') {
-            allCategoryNames = [
-                ...new Set([
-                    ...Object.keys(incomeByCategory),
-                    ...Object.keys(expenseByCategory)
-                ])
-            ];
-        } else if (dataType === 'income') {
-            allCategoryNames = Object.keys(incomeByCategory);
-        } else if (dataType === 'expense') {
-            allCategoryNames = Object.keys(expenseByCategory);
-        }
+        const expenseCategories = Object.values(categoryStats)
+            .filter(stat => stat.expense > 0)
+            .sort((a, b) => b.expense - a.expense);
         
+        let labels = [];
         const datasets = [];
         
-        if (dataType === 'all' || dataType === 'income') {
+        if (dataType === 'all') {
+            const allCategoryNames = [...new Set([
+                ...incomeCategories.map(c => c.name),
+                ...expenseCategories.map(c => c.name)
+            ])];
+            
+            labels = allCategoryNames;
+            
+            const incomeData = allCategoryNames.map(name => {
+                const cat = incomeCategories.find(c => c.name === name);
+                return cat ? cat.income : 0;
+            });
+            
+            const expenseData = allCategoryNames.map(name => {
+                const cat = expenseCategories.find(c => c.name === name);
+                return cat ? cat.expense : 0;
+            });
+            
             datasets.push({
                 label: 'Доходы',
-                data: allCategoryNames.map(name => incomeByCategory[name] || 0),
+                data: incomeData,
                 backgroundColor: 'rgba(54, 162, 235, 0.6)',
             });
-        }
-        
-        if (dataType === 'all' || dataType === 'expense') {
+            
             datasets.push({
                 label: 'Расходы',
-                data: allCategoryNames.map(name => expenseByCategory[name] || 0),
+                data: expenseData,
                 backgroundColor: 'rgba(255, 99, 132, 0.6)',
+            });
+        } else if (dataType === 'income') {
+            labels = incomeCategories.map(c => c.name);
+            datasets.push({
+                label: 'Доходы',
+                data: incomeCategories.map(c => c.income),
+                backgroundColor: incomeCategories.map(c => c.color || 'rgba(54, 162, 235, 0.6)'),
+            });
+        } else if (dataType === 'expense') {
+            labels = expenseCategories.map(c => c.name);
+            datasets.push({
+                label: 'Расходы',
+                data: expenseCategories.map(c => c.expense),
+                backgroundColor: expenseCategories.map(c => c.color || 'rgba(255, 99, 132, 0.6)'),
             });
         }
 
         return {
-            labels: allCategoryNames,
+            labels,
             datasets
         };
     };
 
     const preparePieChartData = (dataType) => {
-        let operationsForPie = [];
+        const categoryStats = {};
         
-        if (dataType === 'all' || dataType === 'expense') {
-            operationsForPie = filteredOperations.filter(op => {
-                const category = userCategories.find(c => c.id === op.categoryId);
-                return category && category.type === 'expense';
-            });
-        } else if (dataType === 'income') {
-            operationsForPie = filteredOperations.filter(op => {
-                const category = userCategories.find(c => c.id === op.categoryId);
-                return category && category.type === 'income';
-            });
-        }
+        userCategories.forEach(category => {
+            categoryStats[category.id] = {
+                name: category.name,
+                amount: 0,
+                color: category.color
+            };
+        });
         
-        if (operationsForPie.length === 0) {
+        filteredOperations.forEach(op => {
+            const category = userCategories.find(c => c.id === op.categoryId);
+            if (category) {
+                if (dataType === 'all' || 
+                    (dataType === 'income' && category.category_type === 'income') ||
+                    (dataType === 'expense' && category.category_type === 'expense')) {
+                    categoryStats[category.id].amount += Math.abs(op.amount);
+                }
+            }
+        });
+        
+        const categoriesWithData = Object.values(categoryStats)
+            .filter(stat => stat.amount > 0)
+            .sort((a, b) => b.amount - a.amount);
+        
+        if (categoriesWithData.length === 0) {
             return {
                 labels: ['Нет данных'],
                 datasets: [{
@@ -272,75 +309,17 @@ function Main() {
             };
         }
         
-        const dataByCategory = {};
-        const colorsByCategory = {};
-        
-        operationsForPie.forEach(op => {
-            const category = userCategories.find(c => c.id === op.categoryId);
-            if (category) {
-                if (!dataByCategory[category.name]) {
-                    dataByCategory[category.name] = 0;
-                    colorsByCategory[category.name] = category.color || '#cccccc';
-                }
-                dataByCategory[category.name] += Math.abs(op.amount);
-            }
-        });
-        
         return {
-            labels: Object.keys(dataByCategory),
+            labels: categoriesWithData.map(c => c.name),
             datasets: [{
-                data: Object.values(dataByCategory),
-                backgroundColor: Object.keys(dataByCategory).map(name => colorsByCategory[name]),
+                data: categoriesWithData.map(c => c.amount),
+                backgroundColor: categoriesWithData.map(c => c.color || '#cccccc'),
             }]
         };
     };
 
     const preparePolarChartData = (dataType) => {
-        let operationsForPolar = [];
-        
-        if (dataType === 'all' || dataType === 'income') {
-            operationsForPolar = filteredOperations.filter(op => {
-                const category = userCategories.find(c => c.id === op.categoryId);
-                return category && category.type === 'income';
-            });
-        } else if (dataType === 'expense') {
-            operationsForPolar = filteredOperations.filter(op => {
-                const category = userCategories.find(c => c.id === op.categoryId);
-                return category && category.type === 'expense';
-            });
-        }
-        
-        if (operationsForPolar.length === 0) {
-            return {
-                labels: ['Нет данных'],
-                datasets: [{
-                    data: [1],
-                    backgroundColor: ['#cccccc'],
-                }]
-            };
-        }
-        
-        const dataByCategory = {};
-        const colorsByCategory = {};
-        
-        operationsForPolar.forEach(op => {
-            const category = userCategories.find(c => c.id === op.categoryId);
-            if (category) {
-                if (!dataByCategory[category.name]) {
-                    dataByCategory[category.name] = 0;
-                    colorsByCategory[category.name] = category.color || '#cccccc';
-                }
-                dataByCategory[category.name] += Math.abs(op.amount);
-            }
-        });
-        
-        return {
-            labels: Object.keys(dataByCategory),
-            datasets: [{
-                data: Object.values(dataByCategory),
-                backgroundColor: Object.keys(dataByCategory).map(name => colorsByCategory[name]),
-            }]
-        };
+        return preparePieChartData(dataType);
     };
 
     const getEmptyChartData = (chartType, dataType) => {
@@ -435,7 +414,7 @@ function Main() {
                 text: `График ${getDataTypeText(dataType)}`
             }
         }
-    }), [dataType, filteredOperations.length, getDataTypeText]);
+    }), [dataType, getDataTypeText]);
 
     const getChartTitle = () => {
         const typeText = getDataTypeText(dataType);
@@ -531,7 +510,7 @@ function Main() {
                                     <option value="all" className="main__chart-option">Все категории</option>
                                     {userCategories.map(category => (
                                         <option key={category.id} value={category.id} className="main__chart-option">
-                                            {category.name} ({category.type === 'income' ? 'доход' : 'расход'})
+                                            {category.name} ({category.category_type === 'income' ? 'доход' : 'расход'})
                                         </option>
                                     ))}
                                 </select>
@@ -609,7 +588,7 @@ function Main() {
                     </div>
 
                     <div className="main__chart-div">
-                        {filteredOperations.length > 0 ? (
+                        {filteredOperations.length > 0 && userCategories.length > 0 ? (
                             renderSelectedChart()
                         ) : (
                             <div>

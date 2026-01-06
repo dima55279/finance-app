@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const operationsApi = createApi({
     reducerPath: "operationsApi",
-    baseQuery: fetchBaseQuery({ baseUrl: '/api/operations' }),
+    baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:8000/operation' }),
     tagTypes: ['Operations'],
     endpoints: (builder) => ({
         getOperations: builder.query({
@@ -10,7 +10,11 @@ export const operationsApi = createApi({
             providesTags: ['Operations'],
         }),
         getOperationsByUser: builder.query({
-            query: (userId) => `?author=${userId}`,
+            query: (userId) => {
+                const params = new URLSearchParams();
+                if (userId) params.append('author', userId);
+                return `?${params.toString()}`;
+            },
             providesTags: ['Operations'],
         }),
         getOperationsWithFilters: builder.query({

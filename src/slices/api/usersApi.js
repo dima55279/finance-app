@@ -6,7 +6,6 @@ export const usersApi = createApi({
     baseUrl: 'http://localhost:8000/user',
     credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
-      // Добавляем заголовки при необходимости
       return headers;
     }
   }),
@@ -76,21 +75,47 @@ export const usersApi = createApi({
       invalidatesTags: ['User'],
     }),
     updateUser: builder.mutation({
-      query: ({ id, changes }) => ({
-        url: `/${id}`,
+      query: ({ id, changes }) => {
+        if (changes.budgetLimit !== undefined) {
+          return {
+            url: `?user_id=${id}`,
+            method: 'PATCH',
+            body: { budgetLimit: changes.budgetLimit },
+          };
+        }
+        else if (changes.avatar !== undefined) {
+          return {
+            url: `/avatar?user_id=${id}`,
+            method: 'PATCH',
+            body: { avatar: changes.avatar },
+          };
+        }
+        return {
+          url: `/${id}`,
+          method: 'PATCH',
+          body: changes,
+        };
+      },
+      invalidatesTags: ['User', 'CurrentUser'],
+    }),
+    updateUserBudget: builder.mutation({
+      query: ({ userId, budgetLimit }) => ({
+        url: `?user_id=${userId}`,
         method: 'PATCH',
-        body: changes,
+        body: { budgetLimit },
       }),
       invalidatesTags: ['User', 'CurrentUser'],
     }),
+
     updateUserAvatar: builder.mutation({
       query: ({ userId, avatar }) => ({
-        url: `/${userId}/avatar`,
+        url: `/avatar?user_id=${userId}`,
         method: 'PATCH',
         body: { avatar },
       }),
       invalidatesTags: ['User', 'CurrentUser'],
     }),
+
     removeUser: builder.mutation({
       query: (id) => ({
         url: `/${id}`,
@@ -111,6 +136,7 @@ export const {
   useGetUserByIdQuery,
   useAddUserMutation,
   useUpdateUserMutation,
+  useUpdateUserBudgetMutation,
   useUpdateUserAvatarMutation,
   useRemoveUserMutation,
 } = usersApi;
