@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useUpdateUserBudgetMutation } from '../slices/api/usersApi';
 
 function BudgetLimitPopup (props) {
-    const { isOpen, onClose, userId } = props;
+    const { isOpen, onClose } = props;
 
     const [updateUserBudget] = useUpdateUserBudgetMutation();
     
@@ -36,15 +36,22 @@ function BudgetLimitPopup (props) {
         }
 
         try {
+            const userId = localStorage.getItem('user_id');
+            if (!userId) {
+                setError('Пользователь не найден');
+                return;
+            }
+            
             await updateUserBudget({
-                userId: userId,
+                userId: parseInt(userId),
                 budgetLimit: budgetValue
             }).unwrap();
 
             onClose();
         } catch (error) {
             console.error('Ошибка при обновлении бюджета:', error);
-            setError('Не удалось обновить бюджет');
+            const errorDetail = error.data?.detail || error.data?.message || 'Неизвестная ошибка';
+            setError(`Не удалось обновить бюджет: ${errorDetail}`);
         }
     };
     

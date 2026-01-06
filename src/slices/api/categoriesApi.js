@@ -1,10 +1,19 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+const getToken = () => localStorage.getItem('access_token');
+
 export const categoriesApi = createApi({
     reducerPath: "categoriesApi",
     baseQuery: fetchBaseQuery({ 
       baseUrl: 'http://localhost:8000/category',
-      credentials: 'include',
+      prepareHeaders: (headers) => {
+        const token = getToken();
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+        headers.set('Content-Type', 'application/json');
+        return headers;
+      },
     }),
     tagTypes: ['Categories'],
     endpoints: (builder) => ({
@@ -13,7 +22,7 @@ export const categoriesApi = createApi({
             providesTags: ['Categories'],
         }),
         getCategoriesByUser: builder.query({
-            query: (userId) => `?author=${userId}`,
+            query: () => '',
             providesTags: ['Categories'],
         }),
         addCategory: builder.mutation({

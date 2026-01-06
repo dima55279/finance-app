@@ -1,9 +1,9 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=6, max_length=50)
 
     class Config:
         schema_extra = {
@@ -14,10 +14,10 @@ class UserLogin(BaseModel):
         }
 
 class UserRegister(UserLogin):
-    name: str
-    surname: str
+    name: str = Field(..., min_length=2, max_length=50)
+    surname: str = Field(..., min_length=2, max_length=50)
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=6, max_length=255)
     budgetLimit: Optional[float] = 0.0
     avatar: Optional[str] = None
 

@@ -15,6 +15,9 @@ import icon from '../images/userIcon.png'
 function Profile() {
   const navigate = useNavigate();
   
+  const token = localStorage.getItem('access_token');
+  const userId = localStorage.getItem('user_id');
+  
   const [isUpdateAvatarPopupOpen, setIsUpdateAvatarPopupOpen] = useState(false);
   const [isBudgetLimitPopupOpen, setIsBudgetLimitPopupOpen] = useState(false);
   const [isAddCategoryPopupOpen, setIsAddCategoryPopupOpen] = useState(false);
@@ -25,18 +28,41 @@ function Profile() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   
-  const { data: currentUser, isLoading: userLoading } = useGetCurrentUserQuery();
+  const { data: currentUser, isLoading: userLoading, error: userError } = useGetCurrentUserQuery(undefined, {
+    skip: !token
+  });
   const [logoutMutation] = useLogoutMutation();
 
-  const { data: categoriesData = [], isLoading: categoriesLoading } = useGetCategoriesByUserQuery(currentUser?.id, {
-    skip: !currentUser?.id
+  const { data: categoriesData = [], isLoading: categoriesLoading } = useGetCategoriesByUserQuery(undefined, {
+    skip: !token
   });
+
   const [removeCategory] = useRemoveCategoryMutation();
 
-  const { data: operationsData = [], isLoading: operationsLoading } = useGetOperationsByUserQuery(currentUser?.id, {
-    skip: !currentUser?.id
+  const { data: operationsData = [], isLoading: operationsLoading } = useGetOperationsByUserQuery(undefined, {
+    skip: !token
   });
   const [removeOperation] = useRemoveOperationMutation();
+
+  useEffect(() => {
+    if (userError && userError.status === 401) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_id');
+      navigate('/login');
+    }
+  }, [userError, navigate]);
+
+  useEffect(() => {
+    if (!token) {
+      navigate('/login');
+    }
+  }, [token, navigate]);
+
+  useEffect(() => {
+    if (!userLoading && !currentUser) {
+      navigate('/login');
+    }
+  }, [currentUser, userLoading, navigate]);
 
   const userCategories = useMemo(() => {
     return [...categoriesData];
@@ -50,9 +76,11 @@ function Profile() {
     let filtered = userOperations;
 
     if (selectedCategoryFilter !== 'all') {
-      filtered = filtered.filter(operation => 
-        operation.categoryId === selectedCategoryFilter
-      );
+        const categoryId = parseInt(selectedCategoryFilter);
+        filtered = filtered.filter(operation => {
+            const opCategoryId = operation.categoryId || operation.category_id;
+            return opCategoryId === categoryId;
+        });
     }
 
     const now = new Date();
@@ -109,98 +137,79 @@ function Profile() {
     return [...uniqueYears].sort((a, b) => b - a);
   }, [userOperations]);
 
-  const { totalIncome, totalExpense } = useMemo(() => {
-    return filteredOperations.reduce((acc, operation) => {
-      const category = userCategories.find(cat => cat.id === operation.categoryId);
+  const { totalIncome, totalExpense, incomeCount, expenseCount, balance } = useMemo(() => {
+    const stats = filteredOperations.reduce((acc, operation) => {
+      const categoryId = operation.categoryId || operation.category_id;
+      
+      const category = userCategories.find(cat => cat.id === categoryId);
+      
       if (category) {
         if (category.category_type === 'income') {
           acc.totalIncome += Math.abs(operation.amount);
+          acc.incomeCount += 1;
+          acc.balance += Math.abs(operation.amount);
         } else if (category.category_type === 'expense') {
           acc.totalExpense += Math.abs(operation.amount);
+          acc.expenseCount += 1;
+          acc.balance -= Math.abs(operation.amount);
         }
+      } else {
+        console.log('Category not found for operation:', operation);
       }
+      
       return acc;
-    }, { totalIncome: 0, totalExpense: 0 });
+    }, { 
+      totalIncome: 0, 
+      totalExpense: 0, 
+      incomeCount: 0, 
+      expenseCount: 0,
+      balance: 0 
+    });
+    
+    return stats;
   }, [filteredOperations, userCategories]);
 
-  const totalBalance = totalIncome - totalExpense;
-
-  useEffect(() => {
-    if (!userLoading && !currentUser) {
-      navigate('/login');
-    }
-  }, [currentUser, userLoading, navigate]);
-
-  const handleLogout = async () => {
-    try {
-      await logoutMutation().unwrap();
-      navigate('/');
-      window.location.reload();
-    } catch (error) {
-      console.error('Ошибка при выходе:', error);
-      navigate('/');
-    }
-  };
-
-  const handleDeleteCategory = async (categoryId) => {
-    if (window.confirm('Вы уверены, что хотите удалить эту категорию?')) {
-      try {
-        await removeCategory(categoryId).unwrap();
-      } catch (error) {
-        console.error('Ошибка при удалении категории:', error);
-        alert('Не удалось удалить категорию');
-      }
-    }
-  };
-
-  const handleDeleteOperation = async (operationId) => {
-    if (window.confirm('Вы уверены, что хотите удалить эту операцию?')) {
-      try {
-        await removeOperation(operationId).unwrap();
-      } catch (error) {
-        console.error('Ошибка при удалении операции:', error);
-        alert('Не удалось удалить операцию');
-      }
-    }
-  };
-
-  const handleCategoryFilterChange = (e) => {
-    setSelectedCategoryFilter(e.target.value);
-  };
-
-  const handleDateFilterChange = (e) => {
-    setSelectedDateFilter(e.target.value);
-  };
-
-  const handleYearChange = (e) => {
-    setSelectedYear(parseInt(e.target.value));
-  };
-
-  const handleMonthChange = (e) => {
-    setSelectedMonth(parseInt(e.target.value));
-  };
-
-  if (userLoading) {
-    return <div>Загрузка...</div>;
+  if (userLoading || categoriesLoading || operationsLoading) {
+    return (
+        <>
+            <Header />
+            <div className="profile">
+                <h1>Загрузка профиля...</h1>
+            </div>
+            <Footer />
+        </>
+    );
   }
 
   if (!currentUser) {
-    return null;
+    return (
+        <>
+            <Header />
+            <div className="profile">
+                <h1>Не удалось загрузить профиль</h1>
+                <button onClick={() => window.location.reload()}>Повторить</button>
+            </div>
+            <Footer />
+        </>
+    );
   }
 
   const getCategoryName = (categoryId) => {
-    const category = userCategories.find(cat => cat.id === categoryId);
-    return category ? category.name : 'Без категории';
+      if (!categoryId) return 'Без категории';
+      const category = userCategories.find(cat => cat.id === categoryId);
+      return category ? category.name : 'Без категории';
   };
 
   const getCategoryColor = (categoryId) => {
-    const category = userCategories.find(cat => cat.id === categoryId);
-    return category ? category.color : '#cccccc';
+      if (!categoryId) return '#cccccc';
+      const category = userCategories.find(cat => cat.id === categoryId);
+      return category ? category.color : '#cccccc';
   };
 
   const getCategoryType = (categoryId) => {
-    const category = userCategories.find(cat => cat.id === categoryId);
-    return category ? category.category_type : 'unknown';
+      if (!categoryId) return 'unknown';
+      const category = userCategories.find(cat => cat.id === categoryId);
+      return category ? category.category_type : 'unknown';
   };
 
   const formatDate = (dateString) => {
@@ -251,6 +260,55 @@ function Profile() {
     setIsAddOperationPopupOpen(false);
   }
 
+  const handleLogout = async () => {
+    try {
+      await logoutMutation().unwrap();
+      navigate('/');
+      window.location.reload();
+    } catch (error) {
+      console.error('Ошибка при выходе:', error);
+      navigate('/');
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    if (window.confirm('Вы уверены, что хотите удалить эту категорию?')) {
+      try {
+        await removeCategory(categoryId).unwrap();
+      } catch (error) {
+        console.error('Ошибка при удалении категории:', error);
+        alert('Не удалось удалить категорию');
+      }
+    }
+  };
+
+  const handleDeleteOperation = async (operationId) => {
+    if (window.confirm('Вы уверены, что хотите удалить эту операцию?')) {
+      try {
+        await removeOperation(operationId).unwrap();
+      } catch (error) {
+        console.error('Ошибка при удалении операции:', error);
+        alert('Не удалось удалить операцию');
+      }
+    }
+  };
+
+  const handleCategoryFilterChange = (e) => {
+    setSelectedCategoryFilter(e.target.value);
+  };
+
+  const handleDateFilterChange = (e) => {
+    setSelectedDateFilter(e.target.value);
+  };
+
+  const handleYearChange = (e) => {
+    setSelectedYear(parseInt(e.target.value));
+  };
+
+  const handleMonthChange = (e) => {
+    setSelectedMonth(parseInt(e.target.value));
+  };
+
   return (
     <>
       <Header />
@@ -263,7 +321,7 @@ function Profile() {
             <p>Изменить фотографию профиля</p>
             <button className="profile__change-btn" type="button" aria-label="открыть" onClick={handleUpdateAvatarPopupClick}></button>
           </div>
-          <UpdateAvatarPopup isOpen={isUpdateAvatarPopupOpen} onClose={closeUpdateAvatarPopup} userId={currentUser.id}/>
+          <UpdateAvatarPopup isOpen={isUpdateAvatarPopupOpen} onClose={closeUpdateAvatarPopup}/>
         </div>
         <p>Имя: {currentUser.name} </p>
         <p>Фамилия: {currentUser.surname} </p>
@@ -273,7 +331,7 @@ function Profile() {
             <p>Изменить бюджет</p>
             <button className="profile__change-btn" type="button" aria-label="открыть" onClick={handleBudgetLimitPopupClick}></button>
           </div>
-          <BudgetLimitPopup isOpen={isBudgetLimitPopupOpen} onClose={closeBudgetLimitPopup} userId={currentUser.id}/>
+          <BudgetLimitPopup isOpen={isBudgetLimitPopupOpen} onClose={closeBudgetLimitPopup}/>
         </div>
         <div>
           <h1 className="profile__headers">Категории</h1>
@@ -317,7 +375,7 @@ function Profile() {
             <p>Добавить категории</p>
             <button className="profile__change-btn" type="button" aria-label="открыть" onClick={handleAddCategoryPopupClick}></button>
           </div>
-          <AddCategoryPopup isOpen={isAddCategoryPopupOpen} onClose={closeAddCategoryPopup} userId={currentUser.id}/>
+          <AddCategoryPopup isOpen={isAddCategoryPopupOpen} onClose={closeAddCategoryPopup}/>
         </div>
         <div>
           <h1 className="profile__headers">Операции</h1>
@@ -388,16 +446,22 @@ function Profile() {
                 <span>Всего операций: {filteredOperations.length}</span>
               </div>
               <div>
-                <span>Всего доходов: {formatAmount(totalIncome)} руб.</span>
+                <span>Операций доходов: {incomeCount}</span>
               </div>
               <div>
-                <span>Всего расходов: {formatAmount(totalExpense)} руб.</span>
+                <span>Операций расходов: {expenseCount}</span>
               </div>
               <div>
-                <span>Баланс: {formatAmount(totalBalance)} руб.</span>
+                <span>Сумма доходов: {formatAmount(totalIncome)} руб.</span>
+              </div>
+              <div>
+                <span>Сумма расходов: {formatAmount(totalExpense)} руб.</span>
+              </div>
+              <div>
+                <span>Баланс: {formatAmount(balance)} руб.</span>
               </div>
             </div>
-          </div>
+        </div>
               
           <h3>Операции:</h3>
           {filteredOperations.length > 0 ? (
@@ -443,7 +507,7 @@ function Profile() {
             </div>
           </div>
         </div>
-        <AddOperationPopup isOpen={isAddOperationPopupOpen} onClose={closeAddOperationPopup} userId={currentUser.id}/>
+        <AddOperationPopup isOpen={isAddOperationPopupOpen} onClose={closeAddOperationPopup}/>
       </div>
       <Footer />
     </>

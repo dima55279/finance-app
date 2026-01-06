@@ -8,7 +8,7 @@ from ..database.connection import get_session
 from ..models.operations import Operation
 from ..models.categories import Category
 from ..schemas.operations import OperationCreate, OperationUpdate, OperationResponse
-from .dependencies import get_current_user, current_sessions
+from .dependencies import get_current_user 
 
 operation_router = APIRouter(
     prefix="/operation",
@@ -17,25 +17,13 @@ operation_router = APIRouter(
 
 @operation_router.get("", response_model=List[OperationResponse])
 async def retrieve_all_operations(
-    author: int = Query(None),
     categoryId: int = Query(None),
     start_date: datetime = Query(None),
     end_date: datetime = Query(None),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_user), 
     session: AsyncSession = Depends(get_session)
 ) -> List[OperationResponse]:
-    query = select(Operation)
-
-    if author:
-        if author != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot view other user's operations"
-            )
-        query = query.where(Operation.author == author)
-    else:
-        query = query.where(Operation.author == current_user.id)
-
+    query = select(Operation).where(Operation.author == current_user.id)
     if categoryId:
         query = query.where(Operation.category_id == categoryId)
 
@@ -101,7 +89,7 @@ async def create_operation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found"
         )
-    
+
     if category.author != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

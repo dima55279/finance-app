@@ -1,10 +1,11 @@
+// Registration.jsx
 import React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import { useRegisterMutation, useGetCurrentUserQuery } from '../slices/api/usersApi';
+import { useRegisterMutation } from '../slices/api/usersApi';
 
 function Registration() {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ function Registration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [registerMutation, { isLoading: registerLoading }] = useRegisterMutation();
-  const { refetch: refetchCurrentUser } = useGetCurrentUserQuery();
+
 
   const validateForm = (formData) => {
     const errors = {};
@@ -56,13 +57,14 @@ function Registration() {
         password: data.get('password'),
       };
       
-      await registerMutation(userData).unwrap();
+      const result = await registerMutation(userData).unwrap();
 
-      await refetchCurrentUser();
+      setTimeout(() => {
+        navigate('/profile');
+      }, 100);
       
-      navigate('/profile');
     } catch (error) {
-      const errorMessage = error.data?.message || error.message || 'Ошибка при регистрации. Попробуйте снова.';
+      const errorMessage = error.data?.detail || error.data?.message || error.message || 'Ошибка при регистрации. Попробуйте снова.';
       setErrors({ general: errorMessage });
     } finally {
       setIsSubmitting(false);
@@ -77,31 +79,67 @@ function Registration() {
         <form className="registration__form" onSubmit={handleSubmit}>
           <label>
             Имя:
-            <input type="text" name="name" className="registration__form__input" required />
+            <input 
+              type="text" 
+              name="name" 
+              className="registration__form__input" 
+              required 
+              disabled={registerLoading || isSubmitting}
+            />
           </label>
           {errors.name && <span className="registration__error">{errors.name}</span>}
           <label>
             Фамилия:
-            <input type="text" name="surname" className="registration__form__input" required />
+            <input 
+              type="text" 
+              name="surname" 
+              className="registration__form__input" 
+              required 
+              disabled={registerLoading || isSubmitting}
+            />
           </label>
           {errors.surname && <span className="registration__error">{errors.surname}</span>}
           <label>
             Электронная почта:
-            <input type="email" name="email" className="registration__form__input" required />
+            <input 
+              type="email" 
+              name="email" 
+              className="registration__form__input" 
+              required 
+              disabled={registerLoading || isSubmitting}
+            />
           </label>
           {errors.email && <span className="registration__error">{errors.email}</span>}
           <label>
             Пароль:
-            <input type="password" name="password" className="registration__form__input" required />
+            <input 
+              type="password" 
+              name="password" 
+              className="registration__form__input" 
+              required 
+              disabled={registerLoading || isSubmitting}
+            />
           </label>
           {errors.password && <span className="registration__error">{errors.password}</span>}
           <label>
             Повторите пароль:
-            <input type="password" name="confirmPassword" className="registration__form__input" minLength="6" required />
+            <input 
+              type="password" 
+              name="confirmPassword" 
+              className="registration__form__input" 
+              minLength="6" 
+              required 
+              disabled={registerLoading || isSubmitting}
+            />
           </label>
           {errors.confirmPassword && <span className="registration__error">{errors.confirmPassword}</span>}
           {errors.general && <div className="registration__error">{errors.general}</div>}
-          <button type="submit" className="registration__form__submit" disabled={registerLoading || isSubmitting} formNoValidate>
+          <button 
+            type="submit" 
+            className="registration__form__submit" 
+            disabled={registerLoading || isSubmitting} 
+            formNoValidate
+          >
             {registerLoading || isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
         </form>

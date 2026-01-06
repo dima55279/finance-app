@@ -6,7 +6,7 @@ from typing import List
 from ..database.connection import get_session
 from ..models.categories import Category
 from ..schemas.categories import CategoryCreate, CategoryUpdate, CategoryResponse
-from .dependencies import get_current_user, current_sessions
+from .dependencies import get_current_user
 
 category_router = APIRouter(
     prefix="/category",
@@ -15,25 +15,12 @@ category_router = APIRouter(
 
 @category_router.get("", response_model=List[CategoryResponse])
 async def retrieve_all_categories(
-    author: int = Query(None),
     current_user = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ) -> List[CategoryResponse]:
-    query = select(Category)
-
-    if author:
-        if author != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot view other user's categories"
-            )
-        query = query.where(Category.author == author)
-    else:
-        query = query.where(Category.author == current_user.id)
-    
+    query = select(Category).where(Category.author == current_user.id)
     result = await session.execute(query)
     categories = result.scalars().all()
-    
     return categories
 
 @category_router.get("/{id}", response_model=CategoryResponse)

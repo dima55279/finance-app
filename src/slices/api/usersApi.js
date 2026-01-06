@@ -1,11 +1,17 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+const getToken = () => localStorage.getItem('access_token');
+
 export const usersApi = createApi({
   reducerPath: "usersApi",
   baseQuery: fetchBaseQuery({ 
     baseUrl: 'http://localhost:8000/user',
-    credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
+      const token = getToken();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      headers.set('Content-Type', 'application/json');
       return headers;
     }
   }),
@@ -18,9 +24,9 @@ export const usersApi = createApi({
         body: credentials,
       }),
       transformResponse: (response) => {
-        if (response.session_id) {
-          localStorage.setItem('session_id', response.session_id);
-          document.cookie = `session_id=${response.session_id}; path=/`;
+        if (response.access_token) {
+          localStorage.setItem('access_token', response.access_token);
+          localStorage.setItem('user_id', response.user_id);
         }
         return response;
       },
@@ -33,9 +39,9 @@ export const usersApi = createApi({
         body: userData,
       }),
       transformResponse: (response) => {
-        if (response.session_id) {
-          localStorage.setItem('session_id', response.session_id);
-          document.cookie = `session_id=${response.session_id}; path=/`;
+        if (response.access_token) {
+          localStorage.setItem('access_token', response.access_token);
+          localStorage.setItem('user_id', response.user_id);
         }
         return response;
       },
@@ -47,8 +53,8 @@ export const usersApi = createApi({
         method: 'POST',
       }),
       transformResponse: () => {
-        localStorage.removeItem('session_id');
-        document.cookie = 'session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_id');
         return { message: 'Logged out' };
       },
       invalidatesTags: ['CurrentUser'],

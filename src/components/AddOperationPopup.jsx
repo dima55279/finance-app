@@ -4,7 +4,7 @@ import { useAddOperationMutation } from '../slices/api/operationsApi';
 import { useGetCategoriesByUserQuery } from '../slices/api/categoriesApi'; 
 
 function AddOperationPopup (props) {
-    const { isOpen, onClose, userId } = props;
+    const { isOpen, onClose } = props;
 
     const [operationData, setOperationData] = useState({
         name: '',
@@ -15,7 +15,7 @@ function AddOperationPopup (props) {
 
     const [addOperation, { isLoading: isAdding }] = useAddOperationMutation();
 
-    const { data: categoriesData, isLoading: isCategoriesLoading } = useGetCategoriesByUserQuery(userId);
+    const { data: categoriesData, isLoading: isCategoriesLoading } = useGetCategoriesByUserQuery();
 
     const userCategories = categoriesData || [];
 
@@ -37,9 +37,6 @@ function AddOperationPopup (props) {
     };
 
     const handleSaveOperation = async () => {
-        console.log('Данные для отправки:', operationData);
-        console.log('Категории пользователя:', userCategories);
-
         if (!operationData.name.trim()) {
             alert('Введите название операции');
             return;
@@ -73,14 +70,10 @@ function AddOperationPopup (props) {
             date: isoDate,
             amount: parseFloat(operationData.amount),
             categoryId: parseInt(operationData.categoryId),
-            author: parseInt(userId),
         };
 
-        console.log('Отправляемые данные:', newOperation);
-
         try {
-            const result = await addOperation(newOperation).unwrap();
-            console.log('Операция успешно создана:', result);
+            await addOperation(newOperation).unwrap();
 
             setOperationData({
                 name: '',
@@ -92,7 +85,11 @@ function AddOperationPopup (props) {
             onClose();
         } catch (error) {
             console.error('Ошибка при добавлении операции:', error);
-            alert(`Не удалось добавить операцию: ${error.data?.detail || error.error || 'Неизвестная ошибка'}`);
+            const errorDetail = error.data?.detail || 
+                              error.data?.message || 
+                              error.error || 
+                              'Неизвестная ошибка';
+            alert(`Не удалось добавить операцию: ${errorDetail}`);
         }
     };
 

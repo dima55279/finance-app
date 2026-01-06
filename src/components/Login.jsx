@@ -1,9 +1,10 @@
+// Login.jsx
 import React from 'react';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import { useLoginMutation, useGetCurrentUserQuery } from '../slices/api/usersApi';
+import { useLoginMutation } from '../slices/api/usersApi'; // УБРАТЬ useGetCurrentUserQuery
 
 function Login() {
     const navigate = useNavigate();
@@ -12,8 +13,7 @@ function Login() {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    const [loginMutation, { isLoading: authLoading, error: authError }] = useLoginMutation();
-    const { refetch: refetchCurrentUser } = useGetCurrentUserQuery();
+    const [loginMutation, { isLoading: authLoading }] = useLoginMutation();
 
     const validateForm = () => {
         const errors = {};
@@ -40,13 +40,11 @@ function Login() {
 
         try {
             const credentials = { email, password };
-            await loginMutation(credentials).unwrap();
-
-            await refetchCurrentUser();
-            
+            const result = await loginMutation(credentials).unwrap();
             navigate('/profile');
+            
         } catch (error) {
-            const errorMessage = error.data?.message || error.message || 'Неверный email или пароль';
+            const errorMessage = error.data?.detail || error.data?.message || error.message || 'Неверный email или пароль';
             setErrors({ general: errorMessage });
         } finally {
             setIsSubmitting(false);
@@ -61,14 +59,31 @@ function Login() {
             <form className="login__form" onSubmit={handleSubmit}>
                 <label>
                     Электронная почта:
-                    <input type="email" name="email" className="login__form__input" value={email} onChange={(e) => setEmail(e.target.value)} required/>
+                    <input 
+                        type="email" 
+                        name="email" 
+                        className="login__form__input" 
+                        value={email} 
+                        onChange={(e) => setEmail(e.target.value)} 
+                        required
+                        disabled={authLoading || isSubmitting}
+                    />
                 </label>
                 {errors.email && <div className="login__error">{errors.email}</div>}
                 <label>
                     Пароль:
-                    <input type="password" name="password" className="login__form__input" value={password} onChange={(e) => setPassword(e.target.value)} required/>
+                    <input 
+                        type="password" 
+                        name="password" 
+                        className="login__form__input" 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        required
+                        disabled={authLoading || isSubmitting}
+                    />
                 </label>
                 {errors.password && <span className="login__error">{errors.password}</span>}
+                {errors.general && <div className="login__error">{errors.general}</div>}
                 <input 
                     type="submit" 
                     value={authLoading || isSubmitting ? "Вход..." : "Войти"} 

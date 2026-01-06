@@ -5,7 +5,7 @@ import { useAddCategoryMutation } from '../slices/api/categoriesApi';
 import 'react-color-palette/css'
 
 function AddCategoryPopup (props) {
-    const { isOpen, onClose, userId } = props;
+    const { isOpen, onClose } = props;
     const [color, setColor] = useColor("#561ecb");
     const [categoryName, setCategoryName] = useState('');
     const [categoryType, setCategoryType] = useState('expense');
@@ -22,7 +22,6 @@ function AddCategoryPopup (props) {
             name: categoryName,
             color: color.hex,
             category_type: categoryType,
-            author: userId
         };
 
         try {

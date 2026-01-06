@@ -14,8 +14,13 @@ import { useGetCurrentUserQuery } from '../slices/api/usersApi';
 Chart.register(...registerables);
 
 function Main() {
+    const token = localStorage.getItem('access_token');
+    const userId = localStorage.getItem('user_id');
 
-    const { data: currentUser, isLoading: userLoading } = useGetCurrentUserQuery();
+    const { data: currentUser, isLoading: userLoading, error: userError } = useGetCurrentUserQuery(undefined, {
+        skip: !token
+    });
+
     const [selectedChart, setSelectedChart] = useState('line');
     const [dataType, setDataType] = useState('all'); 
 
@@ -24,19 +29,33 @@ function Main() {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
-    const { data: categoriesData = [], isLoading: categoriesLoading } = useGetCategoriesByUserQuery(currentUser?.id, {
-        skip: !currentUser?.id
+    const { data: categoriesData = [], isLoading: categoriesLoading } = useGetCategoriesByUserQuery(undefined, {
+        skip: !token
     });
 
-    const { data: operationsData = [], isLoading: operationsLoading } = useGetOperationsByUserQuery(currentUser?.id, {
-        skip: !currentUser?.id
+    const { data: operationsData = [], isLoading: operationsLoading } = useGetOperationsByUserQuery(undefined, {
+        skip: !token
     });
+
+    const isLoading = userLoading || categoriesLoading || operationsLoading;
+
+    const isUnauthorized = userError?.status === 401;
+
+    useEffect(() => {
+        if (isUnauthorized) {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user_id');
+        }
+    }, [isUnauthorized]);
 
     const userCategories = useMemo(() => {
+        if (!token) return [];
         return [...categoriesData];
-    }, [categoriesData]);
+    }, [token, categoriesData]);
 
     const userOperations = useMemo(() => {
+        if (!token) return [];
+        
         if (!operationsData || operationsData.length === 0) {
             return [];
         }
@@ -46,10 +65,8 @@ function Main() {
             categoryId: op.category_id,
         }));
         
-        console.log('Нормализованные операции:', normalizedOperations);
-        
         return [...normalizedOperations].sort((a, b) => new Date(b.date) - new Date(a.date));
-    }, [operationsData]);
+    }, [token, operationsData]);
 
     const filteredOperations = useMemo(() => {
         let filtered = userOperations;
@@ -437,7 +454,7 @@ function Main() {
     };
 
     const renderSelectedChart = () => {
-        if (!currentUser || userLoading) {
+        if (!token || userLoading) {
             switch(selectedChart) {
                 case 'line':
                     return <LineChart />;
@@ -452,25 +469,30 @@ function Main() {
             }
         }
 
-        switch(selectedChart) {
-            case 'line':
-                return <LineChart data={chartData} options={chartOptions} />;
-            case 'bar':
-                return <BarChart data={chartData} options={chartOptions} />;
-            case 'pie':
-                return <PieChart data={chartData} options={chartOptions} />;
-            case 'polar':
-                return <PolarAreaChart data={chartData} options={chartOptions} />;
-            default:
-                return <LineChart data={chartData} options={chartOptions} />;
+        if (token && !userLoading && currentUser) {
+            switch(selectedChart) {
+                case 'line':
+                    return <LineChart data={chartData} options={chartOptions} />;
+                case 'bar':
+                    return <BarChart data={chartData} options={chartOptions} />;
+                case 'pie':
+                    return <PieChart data={chartData} options={chartOptions} />;
+                case 'polar':
+                    return <PolarAreaChart data={chartData} options={chartOptions} />;
+                default:
+                    return <LineChart data={chartData} options={chartOptions} />;
+            }
         }
+
+        // Фолбэк
+        return <LineChart />;
     };
     
     return (
         <>
         <Header />
         <main className="main">
-            {(!currentUser || userLoading) && (
+            {(!token || userLoading) && (
                 <div>
                     <div>
                         <h1>Веб-приложение для управления бюджетом</h1>
@@ -505,7 +527,8 @@ function Main() {
                     </div>
                 </div>
             )}
-            {currentUser && !userLoading && (
+            
+            {token && !userLoading && currentUser && (
                 <div>
                     <h1>Аналитика ваших операций</h1>
                     <p>

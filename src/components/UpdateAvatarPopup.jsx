@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { useUpdateUserAvatarMutation } from '../slices/api/usersApi';
 
 function UpdateAvatarPopup(props) {
-  const { isOpen, onClose, userId } = props;
+  const { isOpen, onClose } = props;
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [error, setError] = useState('');
   
   const [updateUserAvatar, { isLoading }] = useUpdateUserAvatarMutation();
-
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -18,6 +19,7 @@ function UpdateAvatarPopup(props) {
       }
 
       setSelectedFile(file);
+      setError('');
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -29,23 +31,34 @@ function UpdateAvatarPopup(props) {
 
   const handleSave = async () => {
     if (!selectedFile) {
-      alert('Пожалуйста, выберите файл');
+      setError('Пожалуйста, выберите файл');
       return;
     }
 
     try {
+      const userId = localStorage.getItem('user_id');
+      if (!userId) {
+        setError('Пользователь не найден');
+        return;
+      }
+
       const base64String = await convertToBase64(selectedFile);
 
-      await updateUserAvatar({ userId, avatar: base64String }).unwrap();
+      await updateUserAvatar({ 
+        userId: parseInt(userId), 
+        avatar: base64String 
+      }).unwrap();
 
       onClose();
 
       setSelectedFile(null);
       setPreviewUrl('');
+      setError('');
       
     } catch (error) {
       console.error('Ошибка при обновлении аватара:', error);
-      alert('Произошла ошибка при обновлении аватара');
+      const errorDetail = error.data?.detail || error.data?.message || 'Неизвестная ошибка';
+      setError(`Произошла ошибка при обновлении аватара: ${errorDetail}`);
     }
   };
 
@@ -61,6 +74,7 @@ function UpdateAvatarPopup(props) {
   const handleClose = () => {
     setSelectedFile(null);
     setPreviewUrl('');
+    setError('');
     onClose();
   };
 
