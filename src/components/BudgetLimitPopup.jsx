@@ -1,12 +1,11 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { actions as usersActions } from '../slices/usersSlice';
-import { actions as authActions } from '../slices/authSlice';
+import { useUpdateUserMutation } from '../slices/api/usersApi';
 
 function BudgetLimitPopup (props) {
     const { isOpen, onClose, userId } = props;
-    const dispatch = useDispatch();
+
+    const [updateUser] = useUpdateUserMutation();
     
     const [budget, setBudget] = useState('');
     const [error, setError] = useState('');
@@ -18,7 +17,7 @@ function BudgetLimitPopup (props) {
         }
     }, [isOpen]);
     
-    const handleSave = () => {
+    const handleSave = async () => {
         const budgetValue = parseFloat(budget);
         
         if (isNaN(budgetValue)) {
@@ -36,12 +35,17 @@ function BudgetLimitPopup (props) {
             return;
         }
 
-        dispatch(usersActions.updateUser({
-            id: userId,
-            changes: { budgetLimit: budgetValue }
-        }));
+        try {
+            await updateUser({
+                id: userId,
+                changes: { budgetLimit: budgetValue }
+            }).unwrap();
 
-        onClose();
+            onClose();
+        } catch (error) {
+            console.error('Ошибка при обновлении бюджета:', error);
+            setError('Не удалось обновить бюджет');
+        }
     };
     
     return (
@@ -51,17 +55,8 @@ function BudgetLimitPopup (props) {
                 <div className="budget-popup__input-div">
                     <label>
                         Введите новый лимит бюджета на месяц:
-                        <input 
-                            type="number" 
-                            name="budget" 
-                            className="budget-popup__input-budget" 
-                            value={budget}
-                            onChange={(e) => setBudget(e.target.value)}
-                            placeholder="50000"
-                            min="0"
-                            step="100"
-                            autoFocus
-                        />
+                        <input type="number" name="budget" className="budget-popup__input-budget" value={budget}
+                            onChange={(e) => setBudget(e.target.value)} placeholder="50000" min="0" step="100" autoFocus/>
                     </label>
                 </div>
                 <button type="button" aria-label="сохранить" className="budget-popup__save-budget-btn" onClick={handleSave}>Сохранить</button>

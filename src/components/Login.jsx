@@ -1,24 +1,19 @@
 import React from 'react';
 import { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import { actions as authActions } from '../slices/authSlice';
-import { selectors as usersSelectors } from '../slices/usersSlice';
+import { useLoginMutation, useGetCurrentUserQuery } from '../slices/api/usersApi';
 
 function Login() {
-
-    const dispatch = useDispatch();
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    const users = useSelector(usersSelectors.selectAll);
-    const authError = useSelector(state => state.auth.error);
-    const authLoading = useSelector(state => state.auth.loading);
+    const [loginMutation, { isLoading: authLoading, error: authError }] = useLoginMutation();
+    const { refetch: refetchCurrentUser } = useGetCurrentUserQuery();
 
     const validateForm = () => {
         const errors = {};
@@ -37,29 +32,22 @@ function Login() {
         setErrors({});
         
         const validationErrors = validateForm();
-            if (Object.keys(validationErrors).length > 0) {
+        if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
             setIsSubmitting(false);
             return;
         }
 
         try {
-            dispatch(authActions.loginStart());
-            
-            const user = users.find(u => 
-                u.email === email && u.password === password
-            );
-            
-            if (!user) {
-                throw new Error('Неверный email или пароль');
-            }
+            const credentials = { email, password };
+            await loginMutation(credentials).unwrap();
 
-            dispatch(authActions.loginSuccess(user));
-
+            await refetchCurrentUser();
+            
             navigate('/profile');
         } catch (error) {
-            dispatch(authActions.loginFailure(error.message));
-            setErrors({ general: error.message });
+            const errorMessage = error.data?.message || error.message || 'Неверный email или пароль';
+            setErrors({ general: errorMessage });
         } finally {
             setIsSubmitting(false);
         }

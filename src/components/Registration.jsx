@@ -1,20 +1,18 @@
 import React from 'react';
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import _ from 'lodash';
 import { Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import { actions as usersActions } from '../slices/usersSlice';
-import { actions as authActions } from '../slices/authSlice';
-
+import { useRegisterMutation, useGetCurrentUserQuery } from '../slices/api/usersApi';
 
 function Registration() {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [registerMutation, { isLoading: registerLoading }] = useRegisterMutation();
+  const { refetch: refetchCurrentUser } = useGetCurrentUserQuery();
 
   const validateForm = (formData) => {
     const errors = {};
@@ -51,76 +49,70 @@ function Registration() {
     }
 
     try {
-      dispatch(authActions.registerStart());
-      
-      const user = {
-        id: _.uniqueId(),
+      const userData = {
         name: data.get('name'),
         surname: data.get('surname'),
         email: data.get('email'),
         password: data.get('password'),
-        budgetLimit: 0,
-        avatar: null,
-        createdAt: new Date().toISOString(),
       };
       
-      dispatch(usersActions.addUser(user));
+      await registerMutation(userData).unwrap();
 
-      dispatch(authActions.registerSuccess(user));
-
+      await refetchCurrentUser();
+      
       navigate('/profile');
     } catch (error) {
-      dispatch(authActions.registerFailure(error.message));
-      setErrors({ general: 'Ошибка при регистрации. Попробуйте снова.' });
+      const errorMessage = error.data?.message || error.message || 'Ошибка при регистрации. Попробуйте снова.';
+      setErrors({ general: errorMessage });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-
-    return (
-        <>
-        <Header />
-        <div className="registration">
-            <h1 className="registration__heading">Регистрация</h1>
-            <form className="registration__form" onSubmit={ handleSubmit }>
-                <label>
-                    Имя:
-                    <input type="text" name="name" className="registration__form__input" required />
-                </label>
-                {errors.name && <span className="registration__error">{errors.name}</span>}
-                <label>
-                    Фамилия:
-                    <input type="text" name="surname" className="registration__form__input" required />
-                </label>
-                {errors.surname && <span className="registration__error">{errors.surname}</span>}
-                <label>
-                    Электронная почта:
-                    <input type="email" name="email" className="registration__form__input" required />
-                </label>
-                {errors.email && <span className="registration__error">{errors.email}</span>}
-                <label>
-                    Пароль:
-                    <input type="password" name="password" className="registration__form__input" required />
-                </label>
-                {errors.password && <span className="registration__error">{errors.password}</span>}
-                <label>
-                    Повторите пароль:
-                    <input type="password" name="confirmPassword" className="registration__form__input" minLength="6" required/>
-                </label>
-                {errors.confirmPassword && <span className="registration__error">{errors.confirmPassword}</span>}
-                <button type="submit" className="registration__form__submit" disabled={isSubmitting} formNoValidate>
-                    {isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
-                </button>
-            </form>
-            <div className="registration__question-block">
-                <p>Уже зарегистрированы?</p>
-                <Link to="/login" className="registration__question-btn">Войти в профиль</Link>
-            </div>
+  return (
+    <>
+      <Header />
+      <div className="registration">
+        <h1 className="registration__heading">Регистрация</h1>
+        <form className="registration__form" onSubmit={handleSubmit}>
+          <label>
+            Имя:
+            <input type="text" name="name" className="registration__form__input" required />
+          </label>
+          {errors.name && <span className="registration__error">{errors.name}</span>}
+          <label>
+            Фамилия:
+            <input type="text" name="surname" className="registration__form__input" required />
+          </label>
+          {errors.surname && <span className="registration__error">{errors.surname}</span>}
+          <label>
+            Электронная почта:
+            <input type="email" name="email" className="registration__form__input" required />
+          </label>
+          {errors.email && <span className="registration__error">{errors.email}</span>}
+          <label>
+            Пароль:
+            <input type="password" name="password" className="registration__form__input" required />
+          </label>
+          {errors.password && <span className="registration__error">{errors.password}</span>}
+          <label>
+            Повторите пароль:
+            <input type="password" name="confirmPassword" className="registration__form__input" minLength="6" required />
+          </label>
+          {errors.confirmPassword && <span className="registration__error">{errors.confirmPassword}</span>}
+          {errors.general && <div className="registration__error">{errors.general}</div>}
+          <button type="submit" className="registration__form__submit" disabled={registerLoading || isSubmitting} formNoValidate>
+            {registerLoading || isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
+          </button>
+        </form>
+        <div className="registration__question-block">
+          <p>Уже зарегистрированы?</p>
+          <Link to="/login" className="registration__question-btn">Войти в профиль</Link>
         </div>
-        <Footer />
-        </>
-    );
+      </div>
+      <Footer />
+    </>
+  );
 }
 
 export default Registration;

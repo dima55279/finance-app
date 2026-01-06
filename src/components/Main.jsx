@@ -1,6 +1,5 @@
 import React from 'react';
-import { useState, useMemo, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useMemo } from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import LineChart from './LineChart';
@@ -8,15 +7,14 @@ import BarChart from './BarChart';
 import PieChart from './PieChart';
 import PolarAreaChart from './PolarAreaChart';
 import { Chart, registerables } from "chart.js/auto";
-import { selectors as categoriesSelectors } from '../slices/categoriesSlice';
-import { selectors as operationsSelectors } from '../slices/operationsSlice';
+import { useGetCategoriesByUserQuery } from '../slices/api/categoriesApi';
+import { useGetOperationsByUserQuery } from '../slices/api/operationsApi';
+import { useGetCurrentUserQuery } from '../slices/api/usersApi';
 
 Chart.register(...registerables);
 
 function Main() {
-
-    const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
-    const currentUser = useSelector(state => state.auth.currentUser);
+    const { data: currentUser, isLoading: userLoading } = useGetCurrentUserQuery();
     const [selectedChart, setSelectedChart] = useState('line');
     const [dataType, setDataType] = useState('all'); 
 
@@ -25,20 +23,21 @@ function Main() {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
-    const allCategories = useSelector(categoriesSelectors.selectAll);
-    const allOperations = useSelector(operationsSelectors.selectAll);
+    const { data: categoriesData = [], isLoading: categoriesLoading } = useGetCategoriesByUserQuery(currentUser?.id, {
+        skip: !currentUser?.id
+    });
+
+    const { data: operationsData = [], isLoading: operationsLoading } = useGetOperationsByUserQuery(currentUser?.id, {
+        skip: !currentUser?.id
+    });
 
     const userCategories = useMemo(() => {
-        return allCategories.filter(
-            category => category.author === currentUser?.id
-        );
-    }, [allCategories, currentUser?.id]);
+        return categoriesData;
+    }, [categoriesData]);
 
     const userOperations = useMemo(() => {
-        return allOperations
-            .filter(operation => operation.author === currentUser?.id)
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
-    }, [allOperations, currentUser?.id]);
+        return operationsData.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }, [operationsData]);
 
     const filteredOperations = useMemo(() => {
         let filtered = userOperations;
@@ -447,7 +446,7 @@ function Main() {
     };
 
     const renderSelectedChart = () => {
-        if (!isAuthenticated || !currentUser) {
+        if (!currentUser || userLoading) {
             switch(selectedChart) {
                 case 'line':
                     return <LineChart />;
@@ -480,7 +479,7 @@ function Main() {
         <>
         <Header />
         <main className="main">
-            {!isAuthenticated && (
+            {(!currentUser || userLoading) && (
                 <div>
                     <div>
                         <h1>Веб-приложение для управления бюджетом</h1>
@@ -515,7 +514,7 @@ function Main() {
                     </div>
                 </div>
             )}
-            {isAuthenticated && currentUser && (
+            {currentUser && !userLoading && (
                 <div>
                     <h1>Аналитика ваших операций</h1>
                     <p>

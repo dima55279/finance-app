@@ -1,9 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { ColorPicker, useColor } from 'react-color-palette';
-import { actions as categoriesActions } from '../slices/categoriesSlice.js';
-import _ from 'lodash';
+import { useAddCategoryMutation } from '../slices/api/categoriesApi';
 import 'react-color-palette/css'
 
 function AddCategoryPopup (props) {
@@ -11,26 +9,32 @@ function AddCategoryPopup (props) {
     const [color, setColor] = useColor("#561ecb");
     const [categoryName, setCategoryName] = useState('');
     const [categoryType, setCategoryType] = useState('expense');
-    const dispatch = useDispatch();
 
-    const handleSaveCategory = () => {
+    const [addCategory] = useAddCategoryMutation();
+
+    const handleSaveCategory = async () => {
         if (!categoryName.trim()) {
             alert('Введите название категории.');
             return;
         }
 
         const newCategory = {
-            id: _.uniqueId(),
             name: categoryName,
             color: color.hex,
-            type: categoryType,
+            category_type: categoryType,
             author: userId
         };
 
-        dispatch(categoriesActions.addCategory(newCategory));
-        setCategoryName('');
-        setCategoryType('expense');
-        onClose();
+        try {
+            await addCategory(newCategory).unwrap();
+            
+            setCategoryName('');
+            setCategoryType('expense');
+            onClose();
+        } catch (error) {
+            console.error('Ошибка при добавлении категории:', error);
+            alert('Не удалось добавить категорию');
+        }
     };
 
     const handleChangeCategoryName = (e) => {

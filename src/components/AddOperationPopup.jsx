@@ -1,8 +1,8 @@
 import React from 'react';
 import { useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { actions as operationsActions } from '../slices/operationsSlice.js';
-import _ from 'lodash';
+import { useSelector } from 'react-redux';
+import { useAddOperationMutation } from '../slices/api/operationsApi';
+import { useGetCategoriesByUserQuery } from '../slices/api/categoriesApi'; 
 
 function AddOperationPopup (props) {
     const { isOpen, onClose, userId } = props;
@@ -13,13 +13,12 @@ function AddOperationPopup (props) {
             amount: '',
             categoryId: ''
         });
-    
-    const dispatch = useDispatch();
 
-    const allCategories = useSelector(state => state.categories.entities);
-    const userCategories = Object.values(allCategories).filter(
-        category => category.author === userId
-    );
+    const [addOperation] = useAddOperationMutation();
+
+    const { data: categoriesData, isLoading } = useGetCategoriesByUserQuery(userId);
+
+    const userCategories = categoriesData || [];
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -29,7 +28,7 @@ function AddOperationPopup (props) {
         }));
     };
 
-    const handleSaveOperation = () => {
+    const handleSaveOperation = async () => {
         if (!operationData.name.trim() || !operationData.amount || !operationData.date) {
             alert('Заполните все обязательные поля');
             return;
@@ -41,25 +40,28 @@ function AddOperationPopup (props) {
         }
 
         const newOperation = {
-            id: _.uniqueId(),
             name: operationData.name,
             date: operationData.date,
             amount: parseFloat(operationData.amount),
             categoryId: operationData.categoryId,
             author: userId,
-            createdAt: new Date().toISOString()
         };
 
-        dispatch(operationsActions.addOperation(newOperation));
-
-        setOperationData({
-            name: '',
-            date: new Date().toISOString().split('T')[0],
-            amount: '',
-            categoryId: userCategories.length > 0 ? userCategories[0].id : ''
-        });
-        
-        onClose();
+        try {
+            await addOperation(newOperation).unwrap();
+            
+            setOperationData({
+                name: '',
+                date: new Date().toISOString().split('T')[0],
+                amount: '',
+                categoryId: userCategories.length > 0 ? userCategories[0].id : ''
+            });
+            
+            onClose();
+        } catch (error) {
+            console.error('Ошибка при добавлении операции:', error);
+            alert('Не удалось добавить операцию');
+        }
     };
 
     const handleClose = () => {
@@ -71,6 +73,10 @@ function AddOperationPopup (props) {
         });
         onClose();
     };
+
+    if (isLoading) {
+        return <div>Загрузка категорий...</div>;
+    }
 
     return (
         <div className={`add-operation-popup ${isOpen ? 'add-operation-popup__open' : ''}`}>
@@ -96,12 +102,7 @@ function AddOperationPopup (props) {
                     <label>
                         Категория:
                         {userCategories.length > 0 ? (
-                            <select 
-                                name="categoryId"
-                                className="add-operation-popup__input-operation"
-                                value={operationData.categoryId}
-                                onChange={handleInputChange}
-                            >
+                            <select name="categoryId" className="add-operation-popup__input-operation" value={operationData.categoryId} onChange={handleInputChange}>
                                 <option value="">Выберите категорию</option>
                                 {userCategories.map(category => (
                                     <option key={category.id} value={category.id}>
