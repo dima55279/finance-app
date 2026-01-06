@@ -2,7 +2,10 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const operationsApi = createApi({
     reducerPath: "operationsApi",
-    baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:8000/operation' }),
+    baseQuery: fetchBaseQuery({ 
+        baseUrl: 'http://localhost:8000/operation',
+        credentials: 'include',
+    }),
     tagTypes: ['Operations'],
     endpoints: (builder) => ({
         getOperations: builder.query({

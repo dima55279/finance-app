@@ -1,81 +1,97 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Cookie, UploadFile, File
-from ..models.users import UserLogin, UserRegister, UserData, UserBudgetUpdate, UserAvatarUpdate
-from typing import Dict, Any, List
-import base64
+from fastapi import APIRouter, HTTPException, status, Depends, Response, Cookie
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+import uuid
+from datetime import datetime, timedelta
+
+from ..database.connection import get_session
+from ..models.users import User
+from ..schemas.users import UserLogin, UserRegister, UserUpdate, UserResponse, UserBudgetUpdate, UserAvatarUpdate
+from .dependencies import get_current_user, current_sessions
 
 user_router = APIRouter(
-    tags=["User"],
+    prefix="/user",
+    tags=["Users"]
 )
 
-users_db: Dict[int, UserData] = {}
-user_counter = 1
-current_sessions: Dict[str, int] = {} 
-
-def get_current_user(session_id: str = Cookie(None, alias="session_id")) -> UserData:
-    if not session_id or session_id not in current_sessions:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
+@user_router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def register_user(
+    response: Response, 
+    data: UserRegister,
+    session: AsyncSession = Depends(get_session)
+) -> dict:
+    result = await session.execute(
+        select(User).where(User.email == data.email)
+    )
+    existing_user = result.scalar_one_or_none()
     
-    user_id = current_sessions[session_id]
-    if user_id not in users_db:
+    if existing_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with supplied email already exists"
         )
+
+    new_user = User(
+        name=data.name,
+        surname=data.surname,
+        email=data.email,
+        password=data.password,
+        budgetLimit=data.budgetLimit,
+        avatar=data.avatar
+    )
     
-    return users_db[user_id]
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
 
-@user_router.post("/register")
-async def register_user(data: UserRegister) -> dict:
-    global user_counter
-
-    for user in users_db.values():
-        if user.email == data.email:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="User with supplied email already exists"
-            )
-
-    data.id = user_counter
-    user_counter += 1
-
-    users_db[data.id] = data
-
-    import uuid
     session_id = str(uuid.uuid4())
-    current_sessions[session_id] = data.id
+    current_sessions[session_id] = new_user.id
+
+    response.set_cookie(
+        key="session_id",
+        value=session_id,
+        httponly=True,
+        max_age=3600,
+    )
     
     return {
         "message": "User successfully registered!",
-        "user_id": data.id,
+        "user_id": new_user.id,
         "session_id": session_id
     }
 
-@user_router.post("/login")
-async def login_user(user: UserLogin) -> dict:
-    found_user = None
-    for u in users_db.values():
-        if u.email == user.email:
-            found_user = u
-            break
+@user_router.post("/login", response_model=dict)
+async def login_user(
+    response: Response,
+    user: UserLogin,
+    session: AsyncSession = Depends(get_session)
+) -> dict:
+    result = await session.execute(
+        select(User).where(User.email == user.email)
+    )
+    found_user = result.scalar_one_or_none()
     
     if not found_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User does not exist"
         )
-    
+
     if found_user.password != user.password:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Wrong credentials"
         )
     
-    import uuid
     session_id = str(uuid.uuid4())
     current_sessions[session_id] = found_user.id
+
+    response.set_cookie(
+        key="session_id",
+        value=session_id,
+        httponly=True,
+        max_age=3600,
+    )
     
     return {
         "message": "User signed in successfully",
@@ -83,102 +99,151 @@ async def login_user(user: UserLogin) -> dict:
         "session_id": session_id
     }
 
-@user_router.post("/logout")
-async def logout_user(session_id: str = Cookie(None, alias="session_id")):
-    if session_id in current_sessions:
+@user_router.post("/logout", response_model=dict)
+async def logout_user(
+    response: Response,
+    session_id: str = Cookie(None, alias="session_id")
+):
+    if session_id and session_id in current_sessions:
         del current_sessions[session_id]
+
+    response.delete_cookie(key="session_id")
     
     return {"message": "Logged out successfully"}
 
-@user_router.get("/me")
-async def get_current_user_endpoint(current_user: UserData = Depends(get_current_user)) -> Dict[str, Any]:
-    return {
-        "id": current_user.id,
-        "name": current_user.name,
-        "surname": current_user.surname,
-        "email": current_user.email,
-        "budgetLimit": current_user.budgetLimit,
-        "avatar": current_user.avatar
-    }
+@user_router.get("/me", response_model=UserResponse)
+async def get_current_user_endpoint(
+    current_user = Depends(get_current_user)
+) -> UserResponse:
+    return current_user
 
-@user_router.get("/{user_id}")
-async def get_user_by_id(user_id: int) -> Dict[str, Any]:
-    if user_id not in users_db:
+@user_router.get("/{user_id}", response_model=UserResponse)
+async def get_user_by_id(
+    user_id: int,
+    session: AsyncSession = Depends(get_session)
+) -> UserResponse:
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
     
-    user = users_db[user_id]
-    return {
-        "id": user.id,
-        "name": user.name,
-        "surname": user.surname,
-        "email": user.email,
-        "budgetLimit": user.budgetLimit,
-        "avatar": user.avatar
-    }
+    return user
 
-@user_router.patch("")
+@user_router.put("/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    data: UserUpdate,
+    current_user = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+) -> UserResponse:
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot update other user's data"
+        )
+    
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if data.name is not None:
+        user.name = data.name
+    if data.surname is not None:
+        user.surname = data.surname
+    if data.email is not None:
+        email_check = await session.execute(
+            select(User).where(User.email == data.email, User.id != user_id)
+        )
+        existing_user = email_check.scalar_one_or_none()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Email already in use by another user"
+            )
+        user.email = data.email
+    if data.password is not None:
+        user.password = data.password
+    if data.budgetLimit is not None:
+        user.budgetLimit = data.budgetLimit
+    if data.avatar is not None:
+        user.avatar = data.avatar
+    
+    await session.commit()
+    await session.refresh(user)
+    
+    return user
+
+@user_router.patch("/{user_id}/budget", response_model=UserResponse)
 async def update_user_budget(
-    user_id: int, 
+    user_id: int,
     budget_update: UserBudgetUpdate,
-    current_user: UserData = Depends(get_current_user)
-) -> Dict[str, Any]:
-
+    current_user = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+) -> UserResponse:
     if current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot update other user's budget"
         )
     
-    if user_id not in users_db:
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-
-    if budget_update.budgetLimit is not None:
-        users_db[user_id].budgetLimit = budget_update.budgetLimit
     
-    return {
-        "id": users_db[user_id].id,
-        "name": users_db[user_id].name,
-        "surname": users_db[user_id].surname,
-        "email": users_db[user_id].email,
-        "budgetLimit": users_db[user_id].budgetLimit,
-        "avatar": users_db[user_id].avatar,
-        "message": "Budget updated successfully"
-    }
+    user.budgetLimit = budget_update.budgetLimit
+    
+    await session.commit()
+    await session.refresh(user)
+    
+    return user
 
-@user_router.patch("/avatar")
+@user_router.patch("/{user_id}/avatar", response_model=UserResponse)
 async def update_user_avatar(
-    user_id: int, 
+    user_id: int,
     avatar_update: UserAvatarUpdate,
-    current_user: UserData = Depends(get_current_user)
-) -> Dict[str, Any]:
-
+    current_user = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+) -> UserResponse:
     if current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot update other user's avatar"
         )
     
-    if user_id not in users_db:
+    result = await session.execute(
+        select(User).where(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-
-    if avatar_update.avatar is not None:
-        users_db[user_id].avatar = avatar_update.avatar
     
-    return {
-        "id": users_db[user_id].id,
-        "name": users_db[user_id].name,
-        "surname": users_db[user_id].surname,
-        "email": users_db[user_id].email,
-        "budgetLimit": users_db[user_id].budgetLimit,
-        "avatar": users_db[user_id].avatar,
-        "message": "Avatar updated successfully"
-    }
+    user.avatar = avatar_update.avatar
+    
+    await session.commit()
+    await session.refresh(user)
+    
+    return user

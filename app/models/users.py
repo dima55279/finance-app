@@ -1,61 +1,20 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+from ..database.base import Base
+from sqlalchemy import String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-class UserLogin(BaseModel):
-    id: Optional[int] = None
-    email: EmailStr
-    password: str
-
-class Config:
-    schema_extra = {
-        "example": {
-            "id": 1,
-            "email": "example@yandex.ru",
-            "password": "qwerty",
-        }
-    }
-
-class UserRegister(UserLogin):
-    id: Optional[int] = None
-    name: str
-    surname: str
-    email: EmailStr
-    password: str
-    budgetLimit: Optional[float] = 0.0
-    avatar: Optional[str] = None
-
-class Config:
-    schema_extra = {
-        "example": {
-            "id": 1,
-            "name": "Иван",
-            "surname": "Иванов",
-            "email": "example@yandex.ru",
-            "password": "qwerty",
-            "budgetLimit": 10000.0,
-            "avatar": "https://example.com/avatar.jpg"
-        }
-    }
-
-class UserData(UserRegister):
-    pass
-
-class UserBudgetUpdate(BaseModel):
-    budgetLimit: Optional[float] = None
-
-class Config:
-    schema_extra = {
-        "example": {
-            "budgetLimit": 10000.0
-        }
-    }
-
-class UserAvatarUpdate(BaseModel):
-    avatar: Optional[str] = None
-
-class Config:
-    schema_extra = {
-        "example": {
-            "avatar": "https://example.com/avatar.jpg"
-        }
-    }
+class User(Base):
+    __tablename__ = "users"
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(256))
+    surname: Mapped[str] = mapped_column(String(256))
+    email: Mapped[str] = mapped_column(String(256))
+    password: Mapped[str] = mapped_column(String(256))
+    budgetLimit: Mapped[float] = mapped_column("budget_limit", default=0.0)
+    avatar: Mapped[str] = mapped_column(Text, nullable=True)
+    
+    categories: Mapped[list["Category"]] = relationship("Category", back_populates="user", cascade="all, delete-orphan")
+    operations: Mapped[list["Operation"]] = relationship("Operation", back_populates="user", cascade="all, delete-orphan")
+    
+    def __repr__(self) -> str:
+        return f"User(id={self.id}, name={self.name}, surname={self.surname}, email={self.email}, budgetLimit={self.budgetLimit}, avatar={self.avatar})"

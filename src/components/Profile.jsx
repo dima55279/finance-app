@@ -401,33 +401,38 @@ function Profile() {
               
           <h3>Операции:</h3>
           {filteredOperations.length > 0 ? (
-            <div>
-              {filteredOperations.map(operation => {
-                const operationType = getCategoryType(operation.categoryId);
-                const isIncome = operationType === 'income';
-                return (
-                  <div key={operation.id}>
-                    <div>
-                      <div className="profile__operation">
-                        <span>{operation.name}, {formatDate(operation.date)}</span>
-                      </div>
-                      <div className="profile__operation">
-                        <span style={{ color: getCategoryColor(operation.categoryId) }}>
-                          {getCategoryName(operation.categoryId)}
-                        </span>
-                        <span>
-                          {isIncome ? ' +' : ' -'}{formatAmount(operation.amount)} руб.
-                        </span>
-                        <button type="button" className="profile__delete-btn" 
-                        onClick={() => handleDeleteOperation(operation.id)} aria-label="удалить операцию"></button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+              <div>
+                  {filteredOperations.map(operation => {
+                      const categoryId = operation.categoryId || operation.category_id;
+                      const category = userCategories.find(cat => cat.id === categoryId);
+                      
+                      const categoryName = category ? category.name : 'Без категории';
+                      const categoryColor = category ? category.color : '#cccccc';
+                      const isIncome = category ? category.category_type === 'income' : false;
+                      
+                      return (
+                          <div key={operation.id}>
+                              <div>
+                                  <div className="profile__operation">
+                                      <span>{operation.name}, {formatDate(operation.date)}</span>
+                                  </div>
+                                  <div className="profile__operation">
+                                      <span style={{ color: categoryColor }}>
+                                          {categoryName}
+                                      </span>
+                                      <span>
+                                          {isIncome ? ' +' : ' -'}{formatAmount(operation.amount)} руб.
+                                      </span>
+                                      <button type="button" className="profile__delete-btn" 
+                                        onClick={() => handleDeleteOperation(operation.id)} aria-label="удалить операцию"></button>
+                                  </div>
+                              </div>
+                          </div>
+                      );
+                  })}
+              </div>
           ) : (
-            <p>Нет операций, соответствующих выбранным фильтрам.</p>
+              <p>Нет операций, соответствующих выбранным фильтрам.</p>
           )}
               
           <div>

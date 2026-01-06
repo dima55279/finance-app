@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import LineChart from './LineChart';
@@ -14,6 +14,7 @@ import { useGetCurrentUserQuery } from '../slices/api/usersApi';
 Chart.register(...registerables);
 
 function Main() {
+
     const { data: currentUser, isLoading: userLoading } = useGetCurrentUserQuery();
     const [selectedChart, setSelectedChart] = useState('line');
     const [dataType, setDataType] = useState('all'); 
@@ -36,7 +37,18 @@ function Main() {
     }, [categoriesData]);
 
     const userOperations = useMemo(() => {
-        return [...operationsData].sort((a, b) => new Date(b.date) - new Date(a.date));
+        if (!operationsData || operationsData.length === 0) {
+            return [];
+        }
+
+        const normalizedOperations = operationsData.map(op => ({
+            ...op,
+            categoryId: op.category_id,
+        }));
+        
+        console.log('Нормализованные операции:', normalizedOperations);
+        
+        return [...normalizedOperations].sort((a, b) => new Date(b.date) - new Date(a.date));
     }, [operationsData]);
 
     const filteredOperations = useMemo(() => {
@@ -453,7 +465,7 @@ function Main() {
                 return <LineChart data={chartData} options={chartOptions} />;
         }
     };
-
+    
     return (
         <>
         <Header />

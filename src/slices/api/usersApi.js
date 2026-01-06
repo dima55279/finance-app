@@ -75,32 +75,17 @@ export const usersApi = createApi({
       invalidatesTags: ['User'],
     }),
     updateUser: builder.mutation({
-      query: ({ id, changes }) => {
-        if (changes.budgetLimit !== undefined) {
-          return {
-            url: `?user_id=${id}`,
-            method: 'PATCH',
-            body: { budgetLimit: changes.budgetLimit },
-          };
-        }
-        else if (changes.avatar !== undefined) {
-          return {
-            url: `/avatar?user_id=${id}`,
-            method: 'PATCH',
-            body: { avatar: changes.avatar },
-          };
-        }
-        return {
-          url: `/${id}`,
-          method: 'PATCH',
-          body: changes,
-        };
-      },
+      query: ({ id, changes }) => ({
+        url: `/${id}`,
+        method: 'PUT',
+        body: changes,
+      }),
       invalidatesTags: ['User', 'CurrentUser'],
     }),
+
     updateUserBudget: builder.mutation({
       query: ({ userId, budgetLimit }) => ({
-        url: `?user_id=${userId}`,
+        url: `/${userId}/budget`,
         method: 'PATCH',
         body: { budgetLimit },
       }),
@@ -109,7 +94,7 @@ export const usersApi = createApi({
 
     updateUserAvatar: builder.mutation({
       query: ({ userId, avatar }) => ({
-        url: `/avatar?user_id=${userId}`,
+        url: `/${userId}/avatar`,
         method: 'PATCH',
         body: { avatar },
       }),
