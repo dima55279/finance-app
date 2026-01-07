@@ -30,6 +30,9 @@
 @import url(./blocks/profile/profile.css);
 @import url(./blocks/profile/__icon/profile__icon.css);
 @import url(./blocks/profile/__add-block/profile__add-block.css);
+@import url(./blocks/profile/__budget-warning/profile__budget-warning.css);
+@import url(./blocks/profile/__budget-warning/__exceeded/profile__budget-warning__exceeded.css);
+@import url(./blocks/profile/__budget-warning/__warning/profile__budget-warning__warning.css);
 @import url(./blocks/profile/__change-btn/profile__change-btn.css);
 @import url(./blocks/profile/__delete-btn/profile__delete-btn.css);
 @import url(./blocks/profile/__category/profile__category.css);

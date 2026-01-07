@@ -28,6 +28,7 @@ function Profile() {
   const [selectedDateFilter, setSelectedDateFilter] = useState('all');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [budgetWarning, setBudgetWarning] = useState(null);
   
   const { data: currentUser, isLoading: userLoading, error: userError } = useGetCurrentUserQuery(undefined, {
     skip: !token
@@ -169,6 +170,52 @@ function Profile() {
     
     return stats;
   }, [filteredOperations, userCategories]);
+
+  const currentMonthExpenses = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    
+    return userOperations.reduce((total, operation) => {
+      const operationDate = new Date(operation.date);
+      const operationYear = operationDate.getFullYear();
+      const operationMonth = operationDate.getMonth() + 1;
+      
+      if (operationYear === currentYear && operationMonth === currentMonth) {
+        const categoryId = operation.categoryId || operation.category_id;
+        const category = userCategories.find(cat => cat.id === categoryId);
+        
+        if (category && category.category_type === 'expense') {
+          return total + Math.abs(operation.amount);
+        }
+      }
+      return total;
+    }, 0);
+  }, [userOperations, userCategories]);
+
+  useEffect(() => {
+    if (!currentUser?.budgetLimit || currentUser.budgetLimit <= 0) {
+      setBudgetWarning(null);
+      return;
+    }
+    
+    const budgetLimit = currentUser.budgetLimit;
+    const warningThreshold = 0.8;
+    
+    if (currentMonthExpenses > budgetLimit) {
+      setBudgetWarning({
+        type: 'exceeded',
+        message: `Вы превысили лимит бюджета! Расходы: ${formatAmount(currentMonthExpenses)} руб. (Лимит: ${formatAmount(budgetLimit)} руб.)`
+      });
+    } else if (currentMonthExpenses >= budgetLimit * warningThreshold) {
+      setBudgetWarning({
+        type: 'warning',
+        message: `Вы приближаетесь к лимиту бюджета! Расходы: ${formatAmount(currentMonthExpenses)} руб. (${((currentMonthExpenses / budgetLimit) * 100).toFixed(1)}% от лимита ${formatAmount(budgetLimit)} руб.)`
+      });
+    } else {
+      setBudgetWarning(null);
+    }
+  }, [currentMonthExpenses, currentUser?.budgetLimit]);
 
   const isLoading = userLoading || categoriesLoading || operationsLoading;
 
@@ -333,6 +380,12 @@ function Profile() {
         <p>Фамилия: {currentUser.surname} </p>
         <div>
           <p>Лимит бюджета на месяц: {currentUser.budgetLimit || 0} руб.</p>
+          {budgetWarning && (
+            <div className={`profile__budget-warning profile__budget-warning__${budgetWarning.type}`}>
+              <p>{budgetWarning.message}</p>
+              <p>Текущие расходы за месяц: {formatAmount(currentMonthExpenses)} руб.</p>
+            </div>
+          )}
           <div className="profile__add-block">
             <p>Изменить бюджет</p>
             <button className="profile__change-btn" type="button" aria-label="открыть" onClick={handleBudgetLimitPopupClick}></button>
