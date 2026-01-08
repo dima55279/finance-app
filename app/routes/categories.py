@@ -1,3 +1,6 @@
+"""
+Файл categories предоставляет маршруты для работы с категориями.
+"""
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -13,6 +16,7 @@ category_router = APIRouter(
     tags=["Categories"]
 )
 
+# Получение всех категорий текущего пользователя. Функция возвращает список всех категорий, созданных текущим аутентифицированным пользователем
 @category_router.get("", response_model=List[CategoryResponse])
 async def retrieve_all_categories(
     current_user = Depends(get_current_user),
@@ -23,6 +27,7 @@ async def retrieve_all_categories(
     categories = result.scalars().all()
     return categories
 
+# Получение конкретной категории по ID. Функция проверяет, существует ли категория с указанным ID и принадлежит ли она текущему пользователю
 @category_router.get("/{id}", response_model=CategoryResponse)
 async def retrieve_category(
     id: int,
@@ -48,6 +53,7 @@ async def retrieve_category(
     
     return category
 
+# Создание новой категории. Функция создает новую категорию с данными из запроса и связывает ее с текущим пользователем
 @category_router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(
     body: CategoryCreate,
@@ -67,6 +73,7 @@ async def create_category(
     
     return category
 
+# Обновление существующей категории. Функция обновляет данные категории с указанным ID, если она принадлежит текущему пользователю
 @category_router.put("/{id}", response_model=CategoryResponse)
 async def update_category(
     id: int,
@@ -103,6 +110,7 @@ async def update_category(
     
     return category
 
+# Удаление категории по ID. Функция удаляет категорию с указанным ID, если она принадлежит текущему пользователю
 @category_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_category(
     id: int,

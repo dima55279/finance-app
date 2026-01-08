@@ -1,23 +1,36 @@
+/* 
+Компонент AddCategoryPopup. Используется для отображения попапа для добавления новой категории. 
+Данный компонент содержит форму для ввода названия категории и выбора цвета. За основу для выбора цвета взята библиотека react-color-palette. 
+*/
 import React from 'react';
 import { useState } from 'react';
 import { ColorPicker, useColor } from 'react-color-palette';
 import { useAddCategoryMutation } from '../slices/api/categoriesApi';
-import 'react-color-palette/css'
+import 'react-color-palette/css';
+import Loader from './Loader';
 
+// Основной компонент попапа для добавления новой категории
 function AddCategoryPopup (props) {
     const { isOpen, onClose } = props;
+    // Хук для управления выбранным цветом (начальный цвет #561ecb)
     const [color, setColor] = useColor("#561ecb");
+    // Состояние для хранения названия категории
     const [categoryName, setCategoryName] = useState('');
+    // Состояние для хранения типа категории (по умолчанию "расход")
     const [categoryType, setCategoryType] = useState('expense');
 
-    const [addCategory] = useAddCategoryMutation();
+    // RTK Query мутация для добавления новой категории
+    const [addCategory, { isLoading: isAddingCategory }] = useAddCategoryMutation();
 
+    // Функция для сохранения новой категории
     const handleSaveCategory = async () => {
+        // Проверка, что название категории не пустое
         if (!categoryName.trim()) {
             alert('Введите название категории.');
             return;
         }
 
+        // Формирование объекта новой категории
         const newCategory = {
             name: categoryName,
             color: color.hex,
@@ -25,25 +38,32 @@ function AddCategoryPopup (props) {
         };
 
         try {
+            // Отправка запроса на добавление категории
             await addCategory(newCategory).unwrap();
             
+            // Сброс полей формы после успешного добавления
             setCategoryName('');
             setCategoryType('expense');
+            // Закрытие компонента
             onClose();
         } catch (error) {
+            // Обработка ошибки при добавлении категории
             console.error('Ошибка при добавлении категории:', error);
             alert('Не удалось добавить категорию');
         }
     };
 
+    // Обработчик изменения названия категории
     const handleChangeCategoryName = (e) => {
         setCategoryName(e.target.value);
     };
 
+    // Обработчик изменения типа категории
     const handleChangeCategoryType = (e) => {
         setCategoryType(e.target.value);
     };
 
+    // Функция для закрытия компонента с сбросом полей формы
     const handleClose = () => {
         setCategoryName('');
         setCategoryType('expense');
@@ -70,7 +90,14 @@ function AddCategoryPopup (props) {
                         </select>
                     </label>
                 </div>
-                <button type="button" aria-label="сохранить" className="add-category-popup__save-category-btn" onClick={handleSaveCategory}>Сохранить</button>
+                <button type="button" aria-label="сохранить" className="add-category-popup__save-category-btn" onClick={handleSaveCategory} disabled={isAddingCategory}>
+                    {isAddingCategory ? <Loader /> : 'Сохранить'}
+                </button>
+                {isAddingCategory && (
+                    <div>
+                        <Loader />
+                    </div>
+                )}
             </div>
         </div>
     );

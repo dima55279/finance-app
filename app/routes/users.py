@@ -1,3 +1,6 @@
+"""
+Файл users предоставляет маршруты для работы с пользователями.
+"""
 from fastapi import APIRouter, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -15,6 +18,8 @@ user_router = APIRouter(
 
 hash_password = HashPassword()
 
+# Регистрация нового пользователя. Функция создает нового пользователя с указанными данными, хеширует пароль, сохраняет пользователя в базе данных 
+# и возвращает JWT токен для аутентификации.
 @user_router.post("/register", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def register_user(
     data: UserRegister,
@@ -55,6 +60,7 @@ async def register_user(
         "token_type": "Bearer"
     }
 
+# Аутентификация пользователя. Функция проверяет учетные данные пользователя (email и пароль) и возвращает JWT токен для последующей аутентификации.
 @user_router.post("/login", response_model=dict)
 async def login_user(
     user: UserLogin,
@@ -86,12 +92,14 @@ async def login_user(
         "token_type": "Bearer"
     }
 
+# Получение данных текущего аутентифицированного пользователя. Функция возвращает информацию о пользователе, который в данный момент аутентифицирован.
 @user_router.get("/me", response_model=UserResponse)
 async def get_current_user_endpoint(
     current_user: User = Depends(get_current_user)
 ) -> UserResponse:
     return current_user
 
+# Получение данных пользователя по ID. Функция позволяет получить информацию о пользователе по его ID.
 @user_router.get("/{user_id}", response_model=UserResponse)
 async def get_user_by_id(
     user_id: int,
@@ -110,6 +118,7 @@ async def get_user_by_id(
     
     return user
 
+# Обновление данных пользователя. Функция позволяет текущему пользователю обновить свои данные и проверяет уникальность email при его изменении.
 @user_router.put("/{user_id}", response_model=UserResponse)
 async def update_user(
     user_id: int,
@@ -162,6 +171,7 @@ async def update_user(
     
     return user
 
+# Обновление лимита бюджета пользователя. Функция позволяет текущему пользователю изменить свой бюджетный лимит.
 @user_router.patch("/{user_id}/budget", response_model=UserResponse)
 async def update_user_budget(
     user_id: int,
@@ -193,6 +203,7 @@ async def update_user_budget(
     
     return user
 
+# Обновление аватара пользователя. Функция позволяет текущему пользователю изменить свой аватар.
 @user_router.patch("/{user_id}/avatar", response_model=UserResponse)
 async def update_user_avatar(
     user_id: int,

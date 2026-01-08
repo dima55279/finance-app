@@ -1,3 +1,7 @@
+/* 
+Компонент Main. Используется для отображения основной страницы приложения. 
+Данный компонент содержит контент основной страницы, включая аналитику и графики. 
+*/
 import React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import Header from './Header';
@@ -12,36 +16,48 @@ import { useGetCategoriesByUserQuery } from '../slices/api/categoriesApi';
 import { useGetOperationsByUserQuery } from '../slices/api/operationsApi';
 import { useGetCurrentUserQuery } from '../slices/api/usersApi';
 
+// Регистрация всех необходимых компонентов Chart.js для работы графиков
 Chart.register(...registerables);
 
+// Основной компонент главной страницы приложения с аналитикой и графиками
 function Main() {
+    // Получение токена доступа и ID пользователя из localStorage
     const token = localStorage.getItem('access_token');
     const userId = localStorage.getItem('user_id');
 
+    // Запрос на получение данных текущего пользователя (только если есть токен)
     const { data: currentUser, isLoading: userLoading, error: userError } = useGetCurrentUserQuery(undefined, {
         skip: !token
     });
 
+    // Состояние для выбранного типа графика
     const [selectedChart, setSelectedChart] = useState('line');
+    // Состояние для типа отображаемых данных (все/доходы/расходы)
     const [dataType, setDataType] = useState('all'); 
 
+    // Состояния для фильтров
     const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
     const [selectedDateFilter, setSelectedDateFilter] = useState('all');
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
+    // Запрос на получение категорий пользователя (только если есть токен)
     const { data: categoriesData = [], isLoading: categoriesLoading } = useGetCategoriesByUserQuery(undefined, {
         skip: !token
     });
 
+    // Запрос на получение операций пользователя (только если есть токен)
     const { data: operationsData = [], isLoading: operationsLoading } = useGetOperationsByUserQuery(undefined, {
         skip: !token
     });
 
+    // Общее состояние загрузки (объединяет загрузку пользователя, категорий и операций)
     const isLoading = userLoading || categoriesLoading || operationsLoading;
 
+    // Проверка на неавторизованный доступ (ошибка 401)
     const isUnauthorized = userError?.status === 401;
 
+    // Эффект для очистки localStorage при обнаружении неавторизованного доступа
     useEffect(() => {
         if (isUnauthorized) {
             localStorage.removeItem('access_token');
@@ -49,11 +65,13 @@ function Main() {
         }
     }, [isUnauthorized]);
 
+    // Мемоизированный список категорий пользователя
     const userCategories = useMemo(() => {
         if (!token) return [];
         return [...categoriesData];
     }, [token, categoriesData]);
 
+    // Мемоизированный список операций пользователя с нормализацией данных и сортировкой по дате
     const userOperations = useMemo(() => {
         if (!token) return [];
         
@@ -61,17 +79,21 @@ function Main() {
             return [];
         }
 
+        // Нормализация данных: приведение category_id к categoryId для единообразия
         const normalizedOperations = operationsData.map(op => ({
             ...op,
             categoryId: op.category_id,
         }));
         
+        // Сортировка операций по дате (от новых к старым)
         return [...normalizedOperations].sort((a, b) => new Date(b.date) - new Date(a.date));
     }, [token, operationsData]);
 
+    // Мемоизированные отфильтрованные операции на основе выбранных фильтров
     const filteredOperations = useMemo(() => {
         let filtered = userOperations;
 
+        // Фильтрация по категории
         if (selectedCategoryFilter !== 'all') {
             const categoryId = parseInt(selectedCategoryFilter);
             filtered = filtered.filter(operation => 
@@ -79,6 +101,7 @@ function Main() {
             );
         }
 
+        // Фильтрация по временному периоду
         const now = new Date();
         switch (selectedDateFilter) {
             case 'week': {
@@ -127,12 +150,14 @@ function Main() {
         return filtered;
     }, [userOperations, selectedCategoryFilter, selectedDateFilter, selectedYear, selectedMonth]);
 
+    // Мемоизированный список доступных лет на основе операций пользователя
     const availableYears = useMemo(() => {
         const years = userOperations.map(op => new Date(op.date).getFullYear());
         const uniqueYears = [...new Set(years)].sort((a, b) => b - a);
         return uniqueYears;
     }, [userOperations]);
 
+    // Мемоизированная функция для получения текстового описания типа данных
     const getDataTypeText = useMemo(() => (type) => {
         switch(type) {
             case 'all': return 'доходов и расходов';
@@ -142,6 +167,7 @@ function Main() {
         }
     }, []);
 
+    // Функция для подготовки данных графика на основе выбранного типа графика и типа данных
     const prepareChartData = (chartType, dataType) => {
         if (filteredOperations.length === 0 || userCategories.length === 0) {
             return getEmptyChartData(chartType, dataType);
@@ -161,15 +187,18 @@ function Main() {
         }
     };
 
+    // Функция подготовки данных для линейного графика
     const prepareLineChartData = (dataType) => {
         const operationsByDate = {};
         
+        // Группировка операций по дате
         filteredOperations.forEach(op => {
             const date = new Date(op.date).toLocaleDateString('ru-RU');
             if (!operationsByDate[date]) {
                 operationsByDate[date] = { income: 0, expense: 0 };
             }
             
+            // Суммирование доходов и расходов по датам
             const category = userCategories.find(c => c.id === op.categoryId);
             if (category) {
                 if (category.category_type === 'income') {
@@ -180,6 +209,7 @@ function Main() {
             }
         });
 
+        // Сортировка дат в хронологическом порядке
         const dates = Object.keys(operationsByDate).sort((a, b) => {
             const parseDate = (dateString) => {
                 const [day, month, year] = dateString.split('.');
@@ -188,6 +218,7 @@ function Main() {
             return parseDate(a) - parseDate(b);
         });
 
+        // Формирование наборов данных для графика
         const datasets = [];
         
         if (dataType === 'all' || dataType === 'income') {
@@ -218,9 +249,11 @@ function Main() {
         };
     };
 
+    // Функция подготовки данных для столбчатой диаграммы
     const prepareBarChartData = (dataType) => {
         const categoryStats = {};
         
+        // Инициализация статистики по категориям
         userCategories.forEach(category => {
             categoryStats[category.id] = {
                 name: category.name,
@@ -230,6 +263,7 @@ function Main() {
             };
         });
         
+        // Суммирование доходов и расходов по категориям
         filteredOperations.forEach(op => {
             const category = userCategories.find(c => c.id === op.categoryId);
             if (category) {
@@ -241,10 +275,12 @@ function Main() {
             }
         });
         
+        // Фильтрация и сортировка категорий по доходам
         const incomeCategories = Object.values(categoryStats)
             .filter(stat => stat.income > 0)
             .sort((a, b) => b.income - a.income);
         
+        // Фильтрация и сортировка категорий по расходам
         const expenseCategories = Object.values(categoryStats)
             .filter(stat => stat.expense > 0)
             .sort((a, b) => b.expense - a.expense);
@@ -252,6 +288,7 @@ function Main() {
         let labels = [];
         const datasets = [];
         
+        // Формирование данных в зависимости от выбранного типа
         if (dataType === 'all') {
             const allCategoryNames = [...new Set([
                 ...incomeCategories.map(c => c.name),
@@ -303,9 +340,11 @@ function Main() {
         };
     };
 
+    // Функция подготовки данных для круговой диаграммы
     const preparePieChartData = (dataType) => {
         const categoryStats = {};
         
+        // Инициализация статистики по категориям
         userCategories.forEach(category => {
             categoryStats[category.id] = {
                 name: category.name,
@@ -314,6 +353,7 @@ function Main() {
             };
         });
         
+        // Суммирование сумм операций по категориям в зависимости от типа данных
         filteredOperations.forEach(op => {
             const category = userCategories.find(c => c.id === op.categoryId);
             if (category) {
@@ -325,10 +365,12 @@ function Main() {
             }
         });
         
+        // Фильтрация и сортировка категорий по сумме
         const categoriesWithData = Object.values(categoryStats)
             .filter(stat => stat.amount > 0)
             .sort((a, b) => b.amount - a.amount);
         
+        // Возврат пустых данных, если нет операций
         if (categoriesWithData.length === 0) {
             return {
                 labels: ['Нет данных'],
@@ -348,10 +390,12 @@ function Main() {
         };
     };
 
+    // Функция подготовки данных для полярной диаграммы (использует те же данные, что и круговая)
     const preparePolarChartData = (dataType) => {
         return preparePieChartData(dataType);
     };
 
+    // Функция для получения пустых данных графика (когда нет операций)
     const getEmptyChartData = (chartType, dataType) => {
         const emptyData = {
             labels: ['Нет данных'],
@@ -361,6 +405,7 @@ function Main() {
             }]
         };
         
+        // Формирование пустых данных в зависимости от типа графика
         switch(chartType) {
             case 'line':
                 const lineDatasets = [];
@@ -409,30 +454,37 @@ function Main() {
         }
     };
     
+    // Обработчик изменения фильтра по категории
     const handleCategoryFilterChange = (e) => {
         setSelectedCategoryFilter(e.target.value);
     };
 
+    // Обработчик изменения фильтра по дате
     const handleDateFilterChange = (e) => {
         setSelectedDateFilter(e.target.value);
     };
 
+    // Обработчик изменения выбранного года
     const handleYearChange = (e) => {
         setSelectedYear(parseInt(e.target.value));
     };
 
+    // Обработчик изменения выбранного месяца
     const handleMonthChange = (e) => {
         setSelectedMonth(parseInt(e.target.value));
     };
 
+    // Обработчик изменения типа данных
     const handleDataTypeChange = (e) => {
         setDataType(e.target.value);
     };
 
+    // Мемоизированные данные для графика
     const chartData = useMemo(() => {
         return prepareChartData(selectedChart, dataType);
     }, [selectedChart, dataType, filteredOperations, userCategories]);
 
+    // Мемоизированные настройки графика
     const chartOptions = useMemo(() => ({
         responsive: true,
         plugins: {
@@ -446,6 +498,7 @@ function Main() {
         }
     }), [dataType, getDataTypeText]);
 
+    // Функция получения заголовка графика
     const getChartTitle = () => {
         const typeText = getDataTypeText(dataType);
         const chartText = selectedChart === 'line' ? 'Линейный график' :
@@ -454,7 +507,9 @@ function Main() {
         return `${chartText} (${typeText})`;
     };
 
+    // Функция рендеринга выбранного типа графика
     const renderSelectedChart = () => {
+        // Для неавторизованных пользователей или во время загрузки показываем демо-графики
         if (!token || userLoading) {
             switch(selectedChart) {
                 case 'line':
@@ -470,6 +525,7 @@ function Main() {
             }
         }
 
+        // Для авторизованных пользователей показываем графики с их данными
         if (token && !userLoading && currentUser) {
             switch(selectedChart) {
                 case 'line':
@@ -494,6 +550,7 @@ function Main() {
         <main className="main">
             {isLoading && <Loader />}
             
+            {/* Отображение демо-контента для неавторизованных пользователей */}
             {(!token || userLoading) && !isLoading && (
                 <div>
                     <div>
@@ -530,6 +587,7 @@ function Main() {
                 </div>
             )}
             
+            {/* Отображение аналитики для авторизованных пользователей */}
             {token && !userLoading && currentUser && !isLoading && (
                 <div>
                     <h1>Аналитика ваших операций</h1>
@@ -564,6 +622,7 @@ function Main() {
                                     <option value="selected_month" className="main__chart-option">Выбранный месяц</option>
                                 </select>
                                 
+                                {/* Дополнительные селекторы для выбора года/месяца */}
                                 {selectedDateFilter === 'selected_year' && (
                                     <select value={selectedYear} onChange={handleYearChange} className="main__chart-option">
                                         {availableYears.map(year => (

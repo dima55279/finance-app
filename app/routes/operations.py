@@ -1,3 +1,6 @@
+"""
+Файл operations предоставляет маршруты для работы с финансовыми операциями.
+"""
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -15,6 +18,8 @@ operation_router = APIRouter(
     tags=["Operations"]
 )
 
+# Получение всех операций текущего пользователя с фильтрацией. Функция возвращает список всех операций, созданных текущим аутентифицированным пользователем,
+# с возможностью фильтрации по категории, дате начала и дате окончания, а также сортирует результаты по дате в порядке убывания.
 @operation_router.get("", response_model=List[OperationResponse])
 async def retrieve_all_operations(
     categoryId: int = Query(None),
@@ -48,6 +53,7 @@ async def retrieve_all_operations(
     
     return operations
 
+# Получение конкретной операции по ID. Функция проверяет, существует ли операция с указанным ID и принадлежит ли она текущему пользователю.
 @operation_router.get("/{id}", response_model=OperationResponse)
 async def retrieve_operation(
     id: int,
@@ -73,6 +79,7 @@ async def retrieve_operation(
     
     return operation
 
+# Создание новой операции. Функция создает новую операцию с данными из запроса, проверяя что указанная категория существует и принадлежит текущему пользователю.
 @operation_router.post("", response_model=OperationResponse, status_code=status.HTTP_201_CREATED)
 async def create_operation(
     body: OperationCreate,
@@ -110,6 +117,7 @@ async def create_operation(
     
     return operation
 
+# Обновление существующей операции. Функция обновляет данные операции с указанным ID, проверяя права доступа и валидность новой категории (если она указана).
 @operation_router.put("/{id}", response_model=OperationResponse)
 async def update_operation(
     id: int,
@@ -165,6 +173,7 @@ async def update_operation(
     
     return operation
 
+# Удаление операции по ID. Функция удаляет операцию с указанным ID, если она принадлежит текущему пользователю
 @operation_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_operation(
     id: int,

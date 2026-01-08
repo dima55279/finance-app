@@ -1,3 +1,7 @@
+/* 
+Компонент Profile. Используется для отображения страницы профиля пользователя. 
+Данный компонент содержит всю функциональность, связанную с профилем пользователя: обновление аватара, установка лимита бюджета, добавление и удаление категорий и операций.
+*/
 import React from 'react';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,39 +17,53 @@ import { useGetCategoriesByUserQuery, useRemoveCategoryMutation } from '../slice
 import { useGetOperationsByUserQuery, useRemoveOperationMutation } from '../slices/api/operationsApi';
 import icon from '../images/userIcon.png'
 
+// Основной компонент страницы профиля пользователя
 function Profile() {
+  // Хук для навигации между страницами
   const navigate = useNavigate();
   
+  // Получение токена доступа и ID пользователя из localStorage
   const token = localStorage.getItem('access_token');
   const userId = localStorage.getItem('user_id');
   
+  // Состояния для управления открытием различных попапов
   const [isUpdateAvatarPopupOpen, setIsUpdateAvatarPopupOpen] = useState(false);
   const [isBudgetLimitPopupOpen, setIsBudgetLimitPopupOpen] = useState(false);
   const [isAddCategoryPopupOpen, setIsAddCategoryPopupOpen] = useState(false);
   const [isAddOperationPopupOpen, setIsAddOperationPopupOpen] = useState(false);
 
+  // Состояния для фильтрации операций
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [selectedDateFilter, setSelectedDateFilter] = useState('all');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [budgetWarning, setBudgetWarning] = useState(null);
   
+  // Запрос на получение данных текущего пользователя
   const { data: currentUser, isLoading: userLoading, error: userError } = useGetCurrentUserQuery(undefined, {
     skip: !token
   });
+  
+  // Мутация для выхода из системы
   const [logoutMutation, { isLoading: logoutLoading }] = useLogoutMutation();
 
+  // Запрос на получение категорий пользователя
   const { data: categoriesData = [], isLoading: categoriesLoading } = useGetCategoriesByUserQuery(undefined, {
     skip: !token
   });
 
+  // Мутация для удаления категории
   const [removeCategory, { isLoading: removeCategoryLoading }] = useRemoveCategoryMutation();
 
+  // Запрос на получение операций пользователя
   const { data: operationsData = [], isLoading: operationsLoading } = useGetOperationsByUserQuery(undefined, {
     skip: !token
   });
+  
+  // Мутация для удаления операции
   const [removeOperation, { isLoading: removeOperationLoading }] = useRemoveOperationMutation();
 
+  // Эффект для обработки ошибки аутентификации (401)
   useEffect(() => {
     if (userError && userError.status === 401) {
       localStorage.removeItem('access_token');
@@ -54,29 +72,35 @@ function Profile() {
     }
   }, [userError, navigate]);
 
+  // Эффект для перенаправления неавторизованных пользователей на страницу входа
   useEffect(() => {
     if (!token) {
       navigate('/login');
     }
   }, [token, navigate]);
 
+  // Эффект для перенаправления, если пользователь не найден
   useEffect(() => {
     if (!userLoading && !currentUser) {
       navigate('/login');
     }
   }, [currentUser, userLoading, navigate]);
 
+  // Мемоизированный список категорий пользователя
   const userCategories = useMemo(() => {
     return [...categoriesData];
   }, [categoriesData]);
 
+  // Мемоизированный список операций пользователя, отсортированный по дате (от новых к старым)
   const userOperations = useMemo(() => {
     return [...operationsData].sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [operationsData]);
 
+  // Мемоизированные отфильтрованные операции на основе выбранных фильтров
   const filteredOperations = useMemo(() => {
     let filtered = userOperations;
 
+    // Фильтрация по категории
     if (selectedCategoryFilter !== 'all') {
         const categoryId = parseInt(selectedCategoryFilter);
         filtered = filtered.filter(operation => {
@@ -85,6 +109,7 @@ function Profile() {
         });
     }
 
+    // Фильтрация по временному периоду
     const now = new Date();
     switch (selectedDateFilter) {
       case 'week': {
@@ -133,12 +158,14 @@ function Profile() {
     return filtered;
   }, [userOperations, selectedCategoryFilter, selectedDateFilter, selectedYear, selectedMonth]);
 
+  // Мемоизированный список доступных лет на основе операций пользователя
   const availableYears = useMemo(() => {
     const years = userOperations.map(op => new Date(op.date).getFullYear());
     const uniqueYears = [...new Set(years)];
     return [...uniqueYears].sort((a, b) => b - a);
   }, [userOperations]);
 
+  // Мемоизированная статистика операций: общие суммы, количество операций и баланс
   const { totalIncome, totalExpense, incomeCount, expenseCount, balance } = useMemo(() => {
     const stats = filteredOperations.reduce((acc, operation) => {
       const categoryId = operation.categoryId || operation.category_id;
@@ -171,6 +198,7 @@ function Profile() {
     return stats;
   }, [filteredOperations, userCategories]);
 
+  // Мемоизированный расчет текущих расходов за месяц
   const currentMonthExpenses = useMemo(() => {
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -193,6 +221,7 @@ function Profile() {
     }, 0);
   }, [userOperations, userCategories]);
 
+  // Эффект для расчета предупреждений о бюджете
   useEffect(() => {
     if (!currentUser?.budgetLimit || currentUser.budgetLimit <= 0) {
       setBudgetWarning(null);
@@ -202,12 +231,14 @@ function Profile() {
     const budgetLimit = currentUser.budgetLimit;
     const warningThreshold = 0.8;
     
+    // Проверка превышения лимита бюджета
     if (currentMonthExpenses > budgetLimit) {
       setBudgetWarning({
         type: 'exceeded',
         message: `Вы превысили лимит бюджета! Расходы: ${formatAmount(currentMonthExpenses)} руб. (Лимит: ${formatAmount(budgetLimit)} руб.)`
       });
     } else if (currentMonthExpenses >= budgetLimit * warningThreshold) {
+      // Предупреждение о приближении к лимиту
       setBudgetWarning({
         type: 'warning',
         message: `Вы приближаетесь к лимиту бюджета! Расходы: ${formatAmount(currentMonthExpenses)} руб. (${((currentMonthExpenses / budgetLimit) * 100).toFixed(1)}% от лимита ${formatAmount(budgetLimit)} руб.)`
@@ -217,8 +248,10 @@ function Profile() {
     }
   }, [currentMonthExpenses, currentUser?.budgetLimit]);
 
+  // Общее состояние загрузки
   const isLoading = userLoading || categoriesLoading || operationsLoading;
 
+  // Отображение состояния загрузки
   if (isLoading) {
     return (
         <>
@@ -232,6 +265,7 @@ function Profile() {
     );
   }
 
+  // Отображение ошибки, если пользователь не найден
   if (!currentUser) {
     return (
         <>
@@ -245,24 +279,28 @@ function Profile() {
     );
   }
 
+  // Функция получения названия категории по ID
   const getCategoryName = (categoryId) => {
       if (!categoryId) return 'Без категории';
       const category = userCategories.find(cat => cat.id === categoryId);
       return category ? category.name : 'Без категории';
   };
 
+  // Функция получения цвета категории по ID
   const getCategoryColor = (categoryId) => {
       if (!categoryId) return '#cccccc';
       const category = userCategories.find(cat => cat.id === categoryId);
       return category ? category.color : '#cccccc';
   };
 
+  // Функция получения типа категории (доход/расход) по ID
   const getCategoryType = (categoryId) => {
       if (!categoryId) return 'unknown';
       const category = userCategories.find(cat => cat.id === categoryId);
       return category ? category.category_type : 'unknown';
   };
 
+  // Функция форматирования даты в российский формат
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ru-RU', {
@@ -272,6 +310,7 @@ function Profile() {
     });
   };
 
+  // Функция форматирования суммы с двумя десятичными знаками
   const formatAmount = (amount) => {
     return new Intl.NumberFormat('ru-RU', {
       minimumFractionDigits: 2,
@@ -279,38 +318,47 @@ function Profile() {
     }).format(Math.abs(amount));
   };
 
+  // Обработчик открытия попапа обновления аватара
   function handleUpdateAvatarPopupClick() {
     setIsUpdateAvatarPopupOpen(true);
   }
 
+  // Обработчик закрытия попапа обновления аватара
   function closeUpdateAvatarPopup() {
     setIsUpdateAvatarPopupOpen(false);
   }
 
+  // Обработчик открытия попапа установки лимита бюджета
   function handleBudgetLimitPopupClick() {
     setIsBudgetLimitPopupOpen(true);
   }
 
+  // Обработчик закрытия попапа установки лимита бюджета
   function closeBudgetLimitPopup() {
     setIsBudgetLimitPopupOpen(false);
   }
 
+  // Обработчик открытия попапа добавления категории
   function handleAddCategoryPopupClick() {
     setIsAddCategoryPopupOpen(true);
   }
 
+  // Обработчик закрытия попапа добавления категории
   function closeAddCategoryPopup() {
     setIsAddCategoryPopupOpen(false);
   }
 
+  // Обработчик открытия попапа добавления операции
   function handleAddOperationPopupClick() {
     setIsAddOperationPopupOpen(true);
   }
 
+  // Обработчик закрытия попапа добавления операции
   function closeAddOperationPopup() {
     setIsAddOperationPopupOpen(false);
   }
 
+  // Функция выхода пользователя из системы
   const handleLogout = async () => {
     try {
       await logoutMutation().unwrap();
@@ -322,6 +370,7 @@ function Profile() {
     }
   };
 
+  // Функция удаления категории
   const handleDeleteCategory = async (categoryId) => {
     if (window.confirm('Вы уверены, что хотите удалить эту категорию?')) {
       try {
@@ -333,6 +382,7 @@ function Profile() {
     }
   };
 
+  // Функция удаления операции
   const handleDeleteOperation = async (operationId) => {
     if (window.confirm('Вы уверены, что хотите удалить эту операцию?')) {
       try {
@@ -344,18 +394,22 @@ function Profile() {
     }
   };
 
+  // Обработчик изменения фильтра по категории
   const handleCategoryFilterChange = (e) => {
     setSelectedCategoryFilter(e.target.value);
   };
 
+  // Обработчик изменения фильтра по дате
   const handleDateFilterChange = (e) => {
     setSelectedDateFilter(e.target.value);
   };
 
+  // Обработчик изменения выбранного года
   const handleYearChange = (e) => {
     setSelectedYear(parseInt(e.target.value));
   };
 
+  // Обработчик изменения выбранного месяца
   const handleMonthChange = (e) => {
     setSelectedMonth(parseInt(e.target.value));
   };
@@ -364,11 +418,13 @@ function Profile() {
     <>
       <Header />
       <div className="profile">
+        {/* Индикаторы загрузки для различных операций */}
         {(logoutLoading || removeCategoryLoading || removeOperationLoading) && <Loader />}
         
         <div>
           <h1 className="profile__headers">Профиль пользователя</h1>
           <p>Фотография профиля:</p>
+          {/* Отображение аватара пользователя с fallback на стандартную иконку */}
           <img className="profile__icon" src={currentUser?.avatar || icon} alt="аватар" onError={(e) => { e.target.src = icon; }}/>
           <div className="profile__add-block">
             <p>Изменить фотографию профиля</p>
@@ -378,8 +434,10 @@ function Profile() {
         </div>
         <p>Имя: {currentUser.name} </p>
         <p>Фамилия: {currentUser.surname} </p>
+        <p>Email: {currentUser.email} </p>
         <div>
           <p>Лимит бюджета на месяц: {currentUser.budgetLimit || 0} руб.</p>
+          {/* Отображение предупреждений о бюджете */}
           {budgetWarning && (
             <div className={`profile__budget-warning profile__budget-warning__${budgetWarning.type}`}>
               <p>{budgetWarning.message}</p>
@@ -399,6 +457,7 @@ function Profile() {
             {userCategories.length > 0 ? (
               <div>
                 <h3>Доходы:</h3>
+                {/* Отображение категорий доходов */}
                 {userCategories
                   .filter(category => category.category_type === 'income')
                   .map(category => (
@@ -412,6 +471,7 @@ function Profile() {
                   ))}
                 
                 <h3>Расходы:</h3>
+                {/* Отображение категорий расходов */}
                 {userCategories
                   .filter(category => category.category_type === 'expense')
                   .map(category => (
@@ -441,6 +501,7 @@ function Profile() {
 
           <div>
             <h3>Фильтры:</h3>
+            {/* Селектор фильтрации по категории */}
             <div className="profile__select-div">
               <label htmlFor="category-filter">Категория: </label>
               <select id="category-filter" value={selectedCategoryFilter} onChange={handleCategoryFilterChange} className="profile__option">
@@ -453,6 +514,7 @@ function Profile() {
               </select>
             </div>
             
+            {/* Селектор фильтрации по дате */}
             <div className="profile__select-div">
               <label htmlFor="date-filter">Период: </label>
               <select id="date-filter" value={selectedDateFilter} onChange={handleDateFilterChange} className="profile__option">
@@ -464,6 +526,7 @@ function Profile() {
                 <option value="selected_month" className="profile__option">Выбранный месяц</option>
               </select>
               
+              {/* Дополнительные селекторы для выбора года и месяца */}
               {selectedDateFilter === 'selected_year' && (
                 <select value={selectedYear} onChange={handleYearChange} className="profile__option">
                   {availableYears.map(year => (
@@ -498,6 +561,7 @@ function Profile() {
             </div>
           </div>
           
+          {/* Статистика по операциям */}
           <div>
             <h3>Статистика операций:</h3>
             <div>
@@ -523,6 +587,7 @@ function Profile() {
         </div>
               
           <h3>Операции:</h3>
+          {/* Отображение списка операций */}
           {filteredOperations.length > 0 ? (
               <div>
                   {filteredOperations.map(operation => {

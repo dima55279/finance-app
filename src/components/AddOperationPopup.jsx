@@ -1,24 +1,36 @@
+/* 
+Компонент AddOperationPopup. Используется для отображения попапа для добавления новой финансовой операции.
+Данный компонент содержит форму для ввода названия операции, даты, суммы и выбора категории.
+*/
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAddOperationMutation } from '../slices/api/operationsApi';
 import { useGetCategoriesByUserQuery } from '../slices/api/categoriesApi'; 
+import Loader from './Loader';
 
+// Основной компонент попапа для добавления новой финансовой операции
 function AddOperationPopup (props) {
+    // Получение пропсов: состояние открытия компонента и функция закрытия
     const { isOpen, onClose } = props;
 
+    // Состояние для хранения данных новой операции
     const [operationData, setOperationData] = useState({
         name: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0], // Текущая дата в формате YYYY-MM-DD, не учитывая часы, минуты и секунды
         amount: '',
         categoryId: ''
     });
 
+    // RTK Query мутация для добавления операции с состоянием загрузки
     const [addOperation, { isLoading: isAdding }] = useAddOperationMutation();
 
+    // Запрос на получение категорий текущего пользователя
     const { data: categoriesData, isLoading: isCategoriesLoading } = useGetCategoriesByUserQuery();
 
+    // Использование данных категорий или пустого массива по умолчанию
     const userCategories = categoriesData || [];
 
+    // Эффект для установки первой доступной категории по умолчанию
     useEffect(() => {
         if (userCategories.length > 0 && !operationData.categoryId) {
             setOperationData(prev => ({
@@ -28,6 +40,7 @@ function AddOperationPopup (props) {
         }
     }, [userCategories, operationData.categoryId]);
 
+    // Универсальный обработчик изменения полей формы
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setOperationData(prev => ({
@@ -36,35 +49,43 @@ function AddOperationPopup (props) {
         }));
     };
 
+    // Функция для сохранения новой операции
     const handleSaveOperation = async () => {
+        // Валидация названия операции
         if (!operationData.name.trim()) {
             alert('Введите название операции');
             return;
         }
 
+        // Валидация суммы операции
         if (!operationData.amount || parseFloat(operationData.amount) <= 0) {
             alert('Введите корректную сумму');
             return;
         }
 
+        // Валидация даты операции
         if (!operationData.date) {
             alert('Выберите дату');
             return;
         }
 
+        // Проверка наличия категорий у пользователя
         if (userCategories.length === 0) {
             alert('Сначала создайте категорию');
             return;
         }
 
+        // Валидация выбранной категории
         if (!operationData.categoryId) {
             alert('Выберите категорию');
             return;
         }
 
+        // Преобразование даты в ISO формат
         const dateObj = new Date(operationData.date);
         const isoDate = dateObj.toISOString();
 
+        // Формирование объекта новой операции
         const newOperation = {
             name: operationData.name,
             date: isoDate,
@@ -73,8 +94,10 @@ function AddOperationPopup (props) {
         };
 
         try {
+            // Отправка запроса на добавление операции
             await addOperation(newOperation).unwrap();
 
+            // Сброс формы после успешного добавления
             setOperationData({
                 name: '',
                 date: new Date().toISOString().split('T')[0],
@@ -82,8 +105,10 @@ function AddOperationPopup (props) {
                 categoryId: userCategories.length > 0 ? userCategories[0].id : ''
             });
             
+            // Закрытие компонента
             onClose();
         } catch (error) {
+            // Обработка ошибки с детализацией
             console.error('Ошибка при добавлении операции:', error);
             const errorDetail = error.data?.detail || 
                               error.data?.message || 
@@ -93,6 +118,7 @@ function AddOperationPopup (props) {
         }
     };
 
+    // Функция для закрытия компонента с сбросом формы
     const handleClose = () => {
         setOperationData({
             name: '',
@@ -103,8 +129,16 @@ function AddOperationPopup (props) {
         onClose();
     };
 
+    // Отображение состояния загрузки категорий
     if (isCategoriesLoading) {
-        return <div>Загрузка категорий...</div>;
+        return (
+            <div className={`add-operation-popup ${isOpen ? 'add-operation-popup__open' : ''}`}>
+                <div className="popup-loader-container">
+                    <Loader />
+                    <p>Загрузка категорий...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -150,8 +184,18 @@ function AddOperationPopup (props) {
                 </div>
                 <button type="button" aria-label="сохранить" className="add-operation-popup__save-operation-btn" 
                     onClick={handleSaveOperation} disabled={userCategories.length === 0 || isAdding}>
-                    {isAdding ? 'Сохранение...' : 'Сохранить'}
+                    {isAdding ? (
+                        <>
+                            <Loader />
+                            <span>Сохранение...</span>
+                        </>
+                    ) : 'Сохранить'}
                 </button>
+                {isAdding && (
+                    <div>
+                        <Loader />
+                    </div>
+                )}
             </div>
         </div>
     );
