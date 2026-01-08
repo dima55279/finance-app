@@ -74,13 +74,13 @@ async def login_user(
     if not found_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User does not exist"
+            detail="Такого пользователя не существует!"
         )
 
     if not hash_password.verify_hash(user.password, found_user.password):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Wrong credentials"
+            detail="Неправильный пароль!"
         )
     
     token = create_access_token(found_user.email)
@@ -113,7 +113,7 @@ async def get_user_by_id(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail="Пользователь не найден."
         )
     
     return user
@@ -129,7 +129,7 @@ async def update_user(
     if current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot update other user's data"
+            detail="Нельзя обновить данные другого пользователя."
         )
     
     result = await session.execute(
@@ -140,7 +140,7 @@ async def update_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail="Пользователь не найден."
         )
 
     if data.name is not None:
@@ -155,7 +155,7 @@ async def update_user(
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Email already in use by another user"
+                detail="Email уже занят другим пользователем."
             )
         user.email = data.email
     if data.password is not None:
@@ -182,7 +182,7 @@ async def update_user_budget(
     if current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot update other user's budget"
+            detail="Нельзя обновить данные другого пользователя."
         )
     
     result = await session.execute(
@@ -193,7 +193,7 @@ async def update_user_budget(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail="Пользователь не найден."
         )
     
     user.budgetLimit = budget_update.budgetLimit
@@ -214,7 +214,7 @@ async def update_user_avatar(
     if current_user.id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot update other user's avatar"
+            detail="Нельзя обновить данные другого пользователя."
         )
     
     result = await session.execute(
@@ -225,7 +225,7 @@ async def update_user_avatar(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail="Пользователь не найден."
         )
     
     user.avatar = avatar_update.avatar

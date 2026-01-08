@@ -42,13 +42,13 @@ async def retrieve_category(
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Category with supplied ID does not exist"
+            detail="Категория с указанным ID не существует."
         )
     
     if category.author != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot access other user's category"
+            detail="Нельзя получить категорию другого пользователя."
         )
     
     return category
@@ -89,13 +89,13 @@ async def update_category(
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category with supplied ID does not exist"
+            detail="Категория с указанным ID не существует."
         )
     
     if category.author != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot update other user's category"
+            detail="Нельзя обновить категорию другого пользователя."
         )
 
     if body.name is not None:
@@ -125,13 +125,13 @@ async def delete_category(
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category with supplied ID does not exist"
+            detail="Категория с указанным ID не существует."
         )
     
     if category.author != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot delete other user's category"
+            detail="Нельзя удалить категорию другого пользователя."
         )
     
     await session.delete(category)

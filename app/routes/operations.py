@@ -68,13 +68,13 @@ async def retrieve_operation(
     if not operation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Operation with supplied ID does not exist"
+            detail="Операции с указанным ID не существует."
         )
     
     if operation.author != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot access other user's operation"
+            detail="Нельзя получить операцию другого пользователя."
         )
     
     return operation
@@ -94,13 +94,13 @@ async def create_operation(
     if not category:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Category not found"
+            detail="Категория с указанным ID не существует."
         )
 
     if category.author != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot create operation in other user's category"
+            detail="Нельзя создать операцию в категории другого пользователя."
         )
 
     operation = Operation(
@@ -133,13 +133,13 @@ async def update_operation(
     if not operation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Operation with supplied ID does not exist"
+            detail="Операции с указанным ID не существует."
         )
     
     if operation.author != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot update other user's operation"
+            detail="Нельзя обновить операцию другого пользователя."
         )
 
     if body.categoryId is not None:
@@ -151,13 +151,13 @@ async def update_operation(
         if not category:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Category not found"
+                detail="Категория с указанным ID не существует."
             )
         
         if category.author != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cannot move operation to other user's category"
+                detail="Нельзя обновить операцию в категории другого пользователя."
             )
         operation.category_id = body.categoryId
 
@@ -188,13 +188,13 @@ async def delete_operation(
     if not operation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Operation with supplied ID does not exist"
+            detail="Операции с указанным ID не существует."
         )
     
     if operation.author != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot delete other user's operation"
+            detail="Нельзя удалить операцию другого пользователя."
         )
     
     await session.delete(operation)
