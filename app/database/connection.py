@@ -13,11 +13,11 @@ DATABASE_URL = "postgresql+asyncpg://postgres:dima1806@localhost:5432/finance_ap
 engine = create_async_engine(DATABASE_URL, echo=True, future=True)
 
 # Создание фабрики сессий для асинхронной работы с БД
-async_session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 # Асинхронный генератор для получения сессии базы данных
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session_maker() as session:
+    async with session_maker() as session:
         yield session  # Возвращает сессию для использования в обработчиках запросов
 
 # Функция инициализации базы данных (создание всех таблиц на основе моделей)

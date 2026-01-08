@@ -1,0 +1,66 @@
+import asyncio
+import pytest_asyncio
+from contextlib import asynccontextmanager
+from httpx import AsyncClient, ASGITransport
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession
+from sqlalchemy.pool import NullPool
+from sqlalchemy import text
+from ..main import app
+from ..database.base import Base
+from ..database.connection import get_session, session_maker
+
+DATABASE_URL = "postgresql+asyncpg://postgres:dima1806@127.0.0.1:5432/finance_app_test_db"
+engine: AsyncEngine = create_async_engine(DATABASE_URL, poolclass=NullPool, echo=True)
+
+@asynccontextmanager
+async def override_get_session():
+    async with AsyncSession(engine) as session:
+        yield session
+
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def initialize_database():
+    await init_db() 
+    yield
+
+@pytest_asyncio.fixture(scope="function")
+def event_loop():
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
+
+@pytest_asyncio.fixture(scope="function")
+async def test_session():
+    session_maker.configure(bind=engine)
+    async with session_maker() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
+
+@pytest_asyncio.fixture(scope="function")
+async def client(test_session):
+    app.dependency_overrides[get_session] = lambda: test_session
+    async with AsyncClient(
+        transport=ASGITransport(app), base_url="http://localhost"
+    ) as client:
+        yield client
+    app.dependency_overrides.clear()
+
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def clean_tables():
+    """Очищает все таблицы перед каждым тестом"""
+    async with engine.begin() as conn:
+        await conn.execute(text("SET session_replication_role = 'replica';"))
+
+        await conn.execute(text("DELETE FROM operations;"))
+        await conn.execute(text("DELETE FROM categories;"))
+        await conn.execute(text("DELETE FROM users;"))
+        
+        await conn.execute(text("SET session_replication_role = 'origin';"))
+    yield
